@@ -7,6 +7,8 @@
 #include <device_launch_parameters.h>
 #include "cuda_err_check.hpp"
 
+#define DEPTH_DIV_NUM 360
+
 inline float goodAngle(float angle);
 
 __host__ __device__ struct Point {
@@ -43,6 +45,8 @@ __host__ void updateMap(const float* const host_segs, size_t byte_num);
 
 __host__ void rayTrace(const Points& all_segs, const Eigen::Vector3f& now_pos, const Eigen::Vector3f& lidar_param, std::vector<float>& ranges);
 
+__host__ void updateSegments(const float* const host_segs, size_t byte_num);
+
 // 预处理模块，进行back culling以及frustum culling
 // 由于所有面片, 激光雷达参数等都在constant memory中 故要传入的input不多
 // 输出：每个segment四个值（start_id, end_id, distance, normal_angle）以及此segment是否valid（flags）
@@ -50,13 +54,12 @@ __host__ void rayTrace(const Points& all_segs, const Eigen::Vector3f& now_pos, c
 // TODO: 使用constant memory先写出初版，之后再考虑用texture memory替换
 __global__ void preProcess(
     short* const sids, short* const eids, float* const angles, float* const dists,
-    bool* const flags, short ray_num, short start_id, short end_id, short num_segs, 
-    const Vec3& lidar_param, const Vec3& pose
+    bool* const flags, short ray_num, short seg_num, const Vec3& lidar_param, const Vec3& pose
 );
 
 __global__ void rayTraceKernel(
     short* const sids, short* const eids, float* const angles, float* const dists, bool* const flags,
-    short num_segs, short block_seg_num, float* const ranges, const Vec3& lidar_param, const Vec3& pose
+    short seg_base_id, short num_segs, short block_seg_num, float* const ranges, const Vec3& lidar_param, const Vec3& pose
 );
 
 __global__ void getMininumRangeKernel(const float* const oct_ranges, float* const output, int range_num);

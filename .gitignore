@@ -1,2 +1,3 @@
 build/
 **/*.db*
+**/c_cpp_properties.json
