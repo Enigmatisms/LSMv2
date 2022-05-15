@@ -21,6 +21,10 @@ __host__ __device__ struct Point {
     float get_angle() const {
         return atan2f(y, x);
     }
+
+    float norm() const {
+        return sqrtf(x * x + y * y);
+    }
 };
 
 typedef std::vector<Point> Points;
@@ -35,6 +39,9 @@ __host__ void rayTrace(const Points& all_segs, const Eigen::Vector3f& now_pos, c
 // 输出：每个segment四个值（start_id, end_id, distance, normal_angle）以及此segment是否valid（flags）
 // 之后的rayTraceKernel使用global memory中的segment四参数进行运算 GPU不允许直接的global memory to constant memory
 // TODO: 使用constant memory先写出初版，之后再考虑用texture memory替换
-__global__ void preProcess(short start_id, short end_id, short num_segs, bool* flags);
+__global__ void preProcess(
+    short* const sids, short* const eids, float* const angles, float* const dists,
+    bool* const flags, short actual_num, short start_id, short end_id, short num_segs
+);
 
 __global__ void rayTraceKernel(int num_segs, float* ranges);
