@@ -27,6 +27,15 @@ __host__ __device__ struct Point {
     }
 };
 
+__host__ __device__ struct Vec3 {
+    float x, y, z;
+    Vec3(): x(0), y(0), z(0) {}
+    Vec3(float x, float y, float z): x(x), y(y), z(z) {}
+    short get_ray_num() const {
+        return static_cast<short>(roundf((y - x) / z));
+    }
+};
+
 typedef std::vector<Point> Points;
 
 // 如果地图是动态的，则需要根据此函数进行update（覆盖原来的constant mem）
@@ -41,7 +50,13 @@ __host__ void rayTrace(const Points& all_segs, const Eigen::Vector3f& now_pos, c
 // TODO: 使用constant memory先写出初版，之后再考虑用texture memory替换
 __global__ void preProcess(
     short* const sids, short* const eids, float* const angles, float* const dists,
-    bool* const flags, short actual_num, short start_id, short end_id, short num_segs
+    bool* const flags, short ray_num, short start_id, short end_id, short num_segs, 
+    const Vec3& lidar_param, const Vec3& pose
 );
 
-__global__ void rayTraceKernel(int num_segs, float* ranges);
+__global__ void rayTraceKernel(
+    short* const sids, short* const eids, float* const angles, float* const dists, bool* const flags,
+    short num_segs, short block_seg_num, float* const ranges, const Vec3& lidar_param, const Vec3& pose
+);
+
+__global__ void getMininumRangeKernel(const float* const oct_ranges, float* const output, int range_num);
