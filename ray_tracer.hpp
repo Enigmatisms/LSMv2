@@ -34,7 +34,7 @@ __host__ __device__ struct Vec3 {
     Vec3(): x(0), y(0), z(0) {}
     Vec3(float x, float y, float z): x(x), y(y), z(z) {}
     short get_ray_num() const {
-        return static_cast<short>(roundf((y - x) / z));
+        return static_cast<short>(roundf((y - x) / z)) + 1;
     }
 };
 

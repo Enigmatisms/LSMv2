@@ -72,31 +72,41 @@ __global__ void rayTraceKernel(
     short seg_base_id, short num_segs, short block_seg_num, float* const ranges, const Vec3& lidar_param, const Vec3& pose
 ) {
     extern __shared__ float local_segements[]; 
-    // local segements的大小是 (4B * 4 * len(angles)) / 8 + DEPTH_DIV_NUM * 4B (深度图分区) + (1B * len(flags) / 8) + padding
+    // local segments大小应该是 4B * (angles + dists) / 8 + DEPTH_DIV_NUM * 4B (深度图分区) + 2B * (sids + eids) / 8 + (1B * len(flags) / 8) + padding
     const short seg_sid = seg_base_id * num_segs, seg_eid = seg_sid + block_seg_num - 1;
     const short range_base = blockIdx.x * DEPTH_DIV_NUM, rimg_id = range_base + threadIdx.x;
-    int* const range_ptr = (int*)&local_segements[num_segs << 2];           // 此部分是输出
-    bool* const flag_ptr = (bool*)&local_segements[num_segs << 2 + DEPTH_DIV_NUM];   
+    int* const range_ptr    = (int*)&   local_segements[num_segs << 1];
+    short* const id_ptr     = (short*)& local_segements[DEPTH_DIV_NUM + (num_segs << 1)];
+    bool* const flag_ptr    = (bool*)&  local_segements[DEPTH_DIV_NUM + (num_segs << 1) + num_segs];   
     // 可能有严重的warp divergence
     for (short i = 0; i < 16; i++) {
         const short local_i = threadIdx.x + i * DEPTH_DIV_NUM, global_i = seg_sid + local_i;
         if (global_i > seg_eid) break;     // warp divergence
         flag_ptr[local_i] = flags[global_i];
         if (flag_ptr[local_i] ==  false) continue;
-        local_segements[local_i] = sids[global_i]; 
-        local_segements[local_i + 1] = eids[global_i]; 
-        local_segements[local_i + 2] = angles[global_i]; 
-        local_segements[local_i + 3] = dists[global_i]; 
+        // 此处不能这样实现，sids强转float再回转是有风险的
+        local_segements[local_i] = angles[global_i]; 
+        local_segements[local_i + 1] = dists[global_i]; 
+        id_ptr[local_i] = sids[global_i];
+        id_ptr[local_i + 1] = eids[global_i];
     }
     range_ptr[threadIdx.x] = FLOAT_2048;
     __syncthreads();
     for (short seg_id = seg_sid, i = 0; i < block_seg_num; i++) {         // traverse all segs
         seg_id = seg_sid + i;
         // 当前线程的角度id是rimg_id，如果此id小于start_id 或是大于 end_id 则都跳过
-        if (flag_ptr[seg_id] == false || rimg_id < local_segements[seg_id] || rimg_id > local_segements[seg_id + 1]) continue;
+        if (flag_ptr[seg_id] == false) continue;            // 无效首先跳过
+        // 奇异判定
+        short start_id = id_ptr[seg_id << 1], end_id = id_ptr[1 + (seg_id << 1)];
+        if (end_id < start_id) {
+            if (rimg_id > end_id || )
+        } else {
+
+        }
+        // if (flag_ptr[seg_id] == false || rimg_id < id_ptr[seg_id << 1] || rimg_id > local_segements[(seg_id << 1) + 1]) continue;
         // TODO: ep < sp 是可能的，但是需要特殊处理（sp超出范围，ep在范围内也按照ep < sp处理）
         // TODO: 这里的逻辑是不正确的，需要重写，需要考虑ep < sp的可能情况
-        float local_range = cosf(local_segements[seg_id + 2] - (lidar_param.x + pose.z + lidar_param.z * rimg_id)) * local_segements[seg_id + 3];
+        float local_range = cosf(local_segements[seg_id] - (lidar_param.x + pose.z + lidar_param.z * rimg_id)) * local_segements[seg_id + 1];
         const int range_int = floatToOrderedInt(local_range);
         atomicMin(range_ptr + threadIdx.x, range_int);
     }
