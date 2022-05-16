@@ -5,9 +5,10 @@
 constexpr int FLOAT_2048 = 0xc5000000;      // when convert to float directly, this is equal to 2048.0
 constexpr float _M_2PI = 2.f * M_PIf32;
 
-// 4 * 2048 (for mesh segments) and 6 for obs(x, y, theta) and lidar angle (min, max, inc), 1 (interpreted as int) for lidar ray number
+// 4 * 2048 (for mesh segments)
 __constant__ float const_mem[8192];       
 
+// TODO: 是否可以修改为无if结构？
 __device__ __forceinline__ int floatToOrderedInt( const float floatVal ) {
     const int intVal = __float_as_int( floatVal );
     return (intVal >= 0 ) ? intVal ^ 0x80000000 : intVal ^ 0xFFFFFFFF;
@@ -42,8 +43,7 @@ __global__ void preProcess(
         const short seg_base = tmp_seg_id << 2;
         const Point sp(const_mem[seg_base], const_mem[seg_base + 1]), ep(const_mem[seg_base + 2], const_mem[seg_base + 3]), obs(pose.x, pose.y);
         const Point sp_dir = sp - obs, ep_dir = ep - obs;
-        const float sp_dir_angle = goodAngle(sp_dir.get_angle()), 
-            ep_dir_angle = goodAngle(ep_dir.get_angle()), 
+        const float sp_dir_angle = sp_dir.get_angle(), ep_dir_angle = ep_dir.get_angle(), 
             normal_angle = goodAngle((ep - sp).get_angle() + M_PI_2f32);
         const float distance = sp_dir.norm() * cosf(normal_angle - sp_dir_angle);
         dists[seg_base] = distance;
@@ -54,7 +54,7 @@ __global__ void preProcess(
             tmp_eid = static_cast<short>(floor((ep_dangle + _M_2PI * (ep_dangle < 0)) / ainc));
         flags[seg_base] = (distance < 0) && ((tmp_eid < ray_num) || (tmp_sid < ray_num));               // back culling + at least either sp or ep is in range
         sids[seg_base] = tmp_sid;
-        eids[seg_base] = max(tmp_eid, ray_num - 1);
+        eids[seg_base] = tmp_eid;
     }
     // 由于默认激光雷达角度范围至少大于180度，故不会出现start end id均不在范围的情况
     __syncthreads();
@@ -97,15 +97,10 @@ __global__ void rayTraceKernel(
         // 当前线程的角度id是rimg_id，如果此id小于start_id 或是大于 end_id 则都跳过
         if (flag_ptr[seg_id] == false) continue;            // 无效首先跳过
         // 奇异判定
-        short start_id = id_ptr[seg_id << 1], end_id = id_ptr[1 + (seg_id << 1)];
-        if (end_id < start_id) {
-            if (rimg_id > end_id || )
-        } else {
-
-        }
-        // if (flag_ptr[seg_id] == false || rimg_id < id_ptr[seg_id << 1] || rimg_id > local_segements[(seg_id << 1) + 1]) continue;
-        // TODO: ep < sp 是可能的，但是需要特殊处理（sp超出范围，ep在范围内也按照ep < sp处理）
-        // TODO: 这里的逻辑是不正确的，需要重写，需要考虑ep < sp的可能情况
+        const short start_id = id_ptr[seg_id << 1], end_id = id_ptr[1 + (seg_id << 1)];
+        bool singular = (start_id > end_id), less_s = (rimg_id < start_id), more_e = (rimg_id > end_id);
+        // 此处的逻辑是：当出现sid > eid时，需要id > end && id < start, 而反之则只需要 id > end || id < start. 这样写为了防止更多的warp divergence
+        if (((less_s && more_e) && singular) || ((less_s || more_e) && !singular)) continue;
         float local_range = cosf(local_segements[seg_id] - (lidar_param.x + pose.z + lidar_param.z * rimg_id)) * local_segements[seg_id + 1];
         const int range_int = floatToOrderedInt(local_range);
         atomicMin(range_ptr + threadIdx.x, range_int);
