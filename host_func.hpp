@@ -5,7 +5,11 @@
 typedef std::vector<Eigen::Vector2d> Mesh;
 typedef std::vector<Mesh> Meshes;
 
-__host__ void rayTraceRenderCpp(const Eigen::Vector3d& lidar_param, const Eigen::Vector3d& pose, std::vector<float>& range);
 
-// 暂时不知道Rust需要什么样的接口才能调用
-__host__ void rayTraceRenderRust();
+__host__ void intializeFixed(int num_ray);
+__host__ void deallocateDevice();
+__host__ void deallocateFixed();
+
+__host__ void unwrapMeshes(const Meshes& meshes, bool initialized = false);
+
+__host__ void rayTraceRenderCpp(const Eigen::Vector3d& lidar_param, const Eigen::Vector2d& pose, float angle, int ray_num, std::vector<float>& range);
