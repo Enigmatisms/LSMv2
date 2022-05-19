@@ -92,7 +92,7 @@ __global__ void rayTraceKernel(
         if (local_range < -1e-3 || local_range > 1e4) {
             printf("Error: %f, %f, %f\n", local_segements[ii + 1], local_segements[ii], (amin + p_theta + ainc * float(rimg_id)));
         }
-        range_ptr[tid] = std::min(range_ptr[tid], local_range);
+        range_ptr[tid] = min(range_ptr[tid], local_range);
     }
     // 处理结束，将shared memory复制到global memory
     __syncthreads();
@@ -104,7 +104,7 @@ __global__ void getMininumRangeKernel(const float* const oct_ranges, float* cons
     const int range_base = DEPTH_DIV_NUM * blockIdx.x + threadIdx.x;
     float min_range = 1e9;
     for (int i = 0, tmp_base = 0; i < 8; i++, tmp_base += range_num) {
-        min_range = std::min(min_range, oct_ranges[range_base + tmp_base]);
+        min_range = min(min_range, oct_ranges[range_base + tmp_base]);
     }
     bool min_range_negative = min_range < 0;
     output[range_base] = min_range * (1 - min_range_negative) + 1e6 * min_range_negative;
