@@ -1,4 +1,3 @@
-#include <sm_60_atomic_functions.h>
 #include "cuda_err_check.hpp"
 #include "ray_tracer.hpp"
 
@@ -90,9 +89,9 @@ __global__ void rayTraceKernel(
         // 此处的逻辑是：当出现sid > eid时，需要id > end && id < start, 而反之则只需要 id > end || id < start. 这样写为了防止更多的warp divergence. 使用卡诺图简化了计算 原型见89a0070d
         if ((less_s && more_e) || ((less_s || more_e) && !singular)) continue;
         float local_range = local_segements[ii + 1] / cosf(local_segements[ii] - (amin + p_theta + ainc * float(rimg_id)));
-        // if (local_range < -1e-3 || local_range > 1e4) {
-            // printf("Error: %f, %f, %f\n", local_segements[ii + 1], local_segements[ii], (amin + p_theta + ainc * float(rimg_id)));
-        // }
+        if (local_range < -1e-3 || local_range > 1e4) {
+            printf("Error: %f, %f, %f\n", local_segements[ii + 1], local_segements[ii], (amin + p_theta + ainc * float(rimg_id)));
+        }
         range_ptr[tid] = std::min(range_ptr[tid], local_range);
     }
     // 处理结束，将shared memory复制到global memory
@@ -107,7 +106,8 @@ __global__ void getMininumRangeKernel(const float* const oct_ranges, float* cons
     for (int i = 0, tmp_base = 0; i < 8; i++, tmp_base += range_num) {
         min_range = std::min(min_range, oct_ranges[range_base + tmp_base]);
     }
-    output[range_base] = min_range;
+    bool min_range_negative = min_range < 0;
+    output[range_base] = min_range * (1 - min_range_negative) + 1e6 * min_range_negative;
 }
 
 __global__ void sparsifyScan(const float* const denser, float* const sparser) {

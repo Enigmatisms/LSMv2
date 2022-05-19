@@ -1,7 +1,5 @@
 #pragma once
 #include <cmath>
-#include <vector>
-#include <Eigen/Core>
 #include <cuda_runtime.h>
 #include <device_functions.h>
 #include <device_launch_parameters.h>
@@ -27,8 +25,6 @@ struct Point {
         return sqrtf(x * x + y * y);
     }
 };
-
-typedef std::vector<Point> Points;
 
 // 如果地图是动态的，则需要根据此函数进行update（覆盖原来的constant mem）
 __host__ void updateMap(const float* const host_segs, size_t byte_num);
