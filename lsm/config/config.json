@@ -1,0 +1,13 @@
+{
+    "angle_min": -120.0,
+    "angle_max": 120.0,
+    "angle_inc": 0.25,
+    "lidar_noise_k": 0.0,
+
+    "translation_speed": 3.0,
+    "rotation_speed": 1.0,
+    "pid_kp": 1.0,
+    "pid_ki": 0.0,
+    "pid_kd": 0.0,
+    "map_path": "./maps/standard0.txt"
+}

@@ -2,22 +2,23 @@ use nannou::prelude::*;
 use nannou::event::Key;
 use crate::cuda_helper;
 use crate::map_io;
-
 pub struct WindowCtrl {
-    pub window_id: WindowId,
-    pub exit_func: fn(app: &App),
-    pub win_w: u32,
-    pub win_h: u32
+    window_id: WindowId,
+    exit_func: fn(app: &App),
+    win_w: u32,
+    win_h: u32
 }
 
 pub struct Model {
-    pub map_points: Vec<Vec<Point2>>,
-    pub wctrl: WindowCtrl,
-    pub pose: Point3,
-    pub velo: Point3,
-    pub lidar_param: cuda_helper::Vec3_cuda,
-    pub ray_num: usize,
-    pub ranges: [libc::c_float; 3600]
+    map_points: Vec<Vec<Point2>>,
+    wctrl: WindowCtrl,
+    pose: Point3,
+    velo: Point3,
+    velo_max: Point2,
+    lidar_param: cuda_helper::Vec3_cuda,
+    ray_num: usize,
+    ranges: Vec<libc::c_float>,
+    initialized: bool
 }
 
 fn exit(app: &App) {
@@ -32,28 +33,21 @@ pub fn model(app: &App) -> Model {
     let window_id = app
         .new_window()
         .event(event)
-        .size(1200, 900)
+        .size(1000, 800)
         .view(view)
         .build()
         .unwrap();
-    app.set_exit_on_escape(false);
 
-    let meshes: map_io::Meshes = map_io::parse_map_file("../maps/test.txt").unwrap();
+    app.set_exit_on_escape(false);
+    let config: map_io::Config = map_io::read_config("./config/config.json");
+    let meshes: map_io::Meshes = map_io::parse_map_file(config.map_path.as_str()).unwrap();
     let mut seg_point_arr: Vec<cuda_helper::Vec2_cuda> = Vec::new();
     let seg_num = map_io::meshes_to_segments(&meshes, &mut seg_point_arr);
     unsafe {
         cuda_helper::unwrapMeshes(seg_point_arr.as_ptr(), seg_num as libc::c_int, false);
     }
 
-    match app.window(window_id) {
-        Some(window) => {
-            let size_tuple = window.inner_size_pixels();
-            println!("Size of current window: {}, {}", size_tuple.0, size_tuple.1);
-        },
-        None => {},
-    }
-
-    let lidar_param = cuda_helper::Vec3_cuda{x:-2.093667881871531, y:2.093667881871531, z:0.001454441043328608};
+    let lidar_param = cuda_helper::Vec3_cuda{x: config.angle_min, y: config.angle_max, z:config.angle_inc};
     let ray_num = map_io::get_ray_num(&lidar_param);
     Model {
         map_points: meshes, 
@@ -64,9 +58,11 @@ pub fn model(app: &App) -> Model {
         },
         pose: pt3(0., 0., 0.),
         velo: pt3(0., 0., 0.),
+        velo_max: pt2(config.translation_speed, config.rotation_speed),
         lidar_param: lidar_param,
         ray_num: ray_num,
-        ranges: [0.; 3600]
+        ranges: vec![0.; ray_num],
+        initialized: false
     }
 }
 
@@ -89,10 +85,10 @@ pub fn event(_app: &App, _model: &mut Model, event: WindowEvent) {
     match event {
         KeyPressed(key) => {
             match key {
-                Key::W => {_model.velo.y = 3.0;},
-                Key::A => {_model.velo.x = -3.0;},
-                Key::S => {_model.velo.y = -3.0;},
-                Key::D => {_model.velo.x = 3.0;},
+                Key::W => {_model.velo.y = _model.velo_max.x;},
+                Key::A => {_model.velo.x = -_model.velo_max.x;},
+                Key::S => {_model.velo.y = -_model.velo_max.x;},
+                Key::D => {_model.velo.x = _model.velo_max.x;},
                 Key::Escape => {
                     (_model.wctrl.exit_func)(_app);
                 },
@@ -139,20 +135,19 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     draw.to_frame(app, &frame).unwrap();
 }
 
-fn visualize_rays(draw: &Draw, ranges: &[f32], pose: &Point3, lidar_param: &cuda_helper::Vec3_cuda, ray_num: usize) {
+fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar_param: &cuda_helper::Vec3_cuda, ray_num: usize) {
     let cur_angle_min = pose.z + lidar_param.x + lidar_param.z;
     for i in 0..ray_num {
         let r = ranges[i];
-        // print!("{}, ", r);
+        if r > 1e5 {continue;}
         let cur_angle = cur_angle_min + lidar_param.z * 3. * (i as f32);
         let dir = pt2( cur_angle.cos(), cur_angle.sin());
         let start_p = pt2(pose.x, pose.y);
-        let end_p = start_p + dir * ranges[i];
+        let end_p = start_p + dir * r;
         draw.line()
             .start(start_p)
             .end(end_p)
             .weight(1.)
             .color(RED);
     } 
-    // print!("\n");
 }

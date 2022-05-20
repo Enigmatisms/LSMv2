@@ -991,6 +991,8 @@ dependencies = [
  "cc",
  "libc",
  "nannou",
+ "serde",
+ "serde_json",
  "winit 0.26.1",
 ]
 
