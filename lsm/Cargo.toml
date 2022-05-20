@@ -8,6 +8,8 @@ build = "build.rs"
 
 [dependencies]
 libc = "0.2"
+nannou = "0.18"
+winit = "0.26.1"
 
 [build-dependencies]
 cc = "1.0"

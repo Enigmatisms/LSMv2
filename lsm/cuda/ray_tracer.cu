@@ -89,9 +89,6 @@ __global__ void rayTraceKernel(
         // 此处的逻辑是：当出现sid > eid时，需要id > end && id < start, 而反之则只需要 id > end || id < start. 这样写为了防止更多的warp divergence. 使用卡诺图简化了计算 原型见89a0070d
         if ((less_s && more_e) || ((less_s || more_e) && !singular)) continue;
         float local_range = local_segements[ii + 1] / cosf(local_segements[ii] - (amin + p_theta + ainc * float(rimg_id)));
-        if (local_range < -1e-3 || local_range > 1e4) {
-            printf("Error: %f, %f, %f\n", local_segements[ii + 1], local_segements[ii], (amin + p_theta + ainc * float(rimg_id)));
-        }
         range_ptr[tid] = min(range_ptr[tid], local_range);
     }
     // 处理结束，将shared memory复制到global memory

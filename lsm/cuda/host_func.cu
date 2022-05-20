@@ -37,11 +37,10 @@ void deallocateDevice() {
 }
 
 // export
-void unwrapMeshes(MeshConstPtr meshes, int total_seg_num, bool initialized) {
+void unwrapMeshes(MeshConstPtr meshes, int seg_num, bool initialized) {
     size_t mesh_point_cnt = 0;
-    total_seg_num = 0;
-    for (int i = 0; i < total_seg_num; i++) {
-        int seg_point_base = total_seg_num << 1;
+    for (int i = 0; i < seg_num; i++) {
+        int seg_point_base = i << 1;
         const Vec2& start = meshes[seg_point_base], end = meshes[seg_point_base + 1];
         all_segments[mesh_point_cnt++] = start.x;
         all_segments[mesh_point_cnt++] = start.y;
@@ -52,20 +51,21 @@ void unwrapMeshes(MeshConstPtr meshes, int total_seg_num, bool initialized) {
     if (initialized == true)
         deallocateDevice();
 
-    CUDA_CHECK_RETURN(cudaMalloc((void **) &sid_ptr, total_seg_num * sizeof(short)));
-    CUDA_CHECK_RETURN(cudaMalloc((void **) &eid_ptr, total_seg_num * sizeof(short)));
-    CUDA_CHECK_RETURN(cudaMalloc((void **) &angles_ptr, total_seg_num * sizeof(float)));
-    CUDA_CHECK_RETURN(cudaMalloc((void **) &dists_ptr, total_seg_num * sizeof(float)));
-    CUDA_CHECK_RETURN(cudaMalloc((void **) &flag_ptr, total_seg_num * sizeof(bool)));
+    CUDA_CHECK_RETURN(cudaMalloc((void **) &sid_ptr, seg_num * sizeof(short)));
+    CUDA_CHECK_RETURN(cudaMalloc((void **) &eid_ptr, seg_num * sizeof(short)));
+    CUDA_CHECK_RETURN(cudaMalloc((void **) &angles_ptr, seg_num * sizeof(float)));
+    CUDA_CHECK_RETURN(cudaMalloc((void **) &dists_ptr, seg_num * sizeof(float)));
+    CUDA_CHECK_RETURN(cudaMalloc((void **) &flag_ptr, seg_num * sizeof(bool)));
+    total_seg_num = seg_num;
 }
 
 // export
-void rayTraceRender(const Vec3& lidar_param, const Vec2& pose, float angle, int ray_num, float* range) {
+void rayTraceRender(const Vec3& lidar_param, const Vec3& pose, int ray_num, float* range) {
     // 对于静态地图而言，由于场景无需频繁update，unwrapMeshes函数调用频率低，则可以省略内存allocation操作
     const int lidar_ray_blocks = ray_num / DEPTH_DIV_NUM;
     const short num_blocks = static_cast<short>(ceilf(total_seg_num / 256.f));          // 面片数 / 128
     preProcess<<<num_blocks, 256>>>(sid_ptr, eid_ptr, angles_ptr, dists_ptr, flag_ptr, ray_num, 
-                total_seg_num, lidar_param.x, lidar_param.z, pose.x, pose.y, angle);
+                total_seg_num, lidar_param.x, lidar_param.z, pose.x, pose.y, pose.z);
     CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     cudaStream_t streams[8];
     for (short i = 0; i < 8; i++)
@@ -79,7 +79,7 @@ void rayTraceRender(const Vec3& lidar_param, const Vec2& pose, float angle, int 
         // local segments大小应该是 4B * (angles + dists) / 8 + DEPTH_DIV_NUM * 4B (深度图分区) + 2B * (sids + eids) / 8 + (1B * len(flags) / 8) + padding
         rayTraceKernel<<<lidar_ray_blocks, DEPTH_DIV_NUM, shared_mem_size, streams[i]>>>(
             sid_ptr, eid_ptr, angles_ptr, dists_ptr, flag_ptr, i, segment_per_block, 
-            ((i < 7) ? segment_per_block : last_block_seg_num), &oct_ranges[i * ray_num], lidar_param.x, lidar_param.z, angle
+            ((i < 7) ? segment_per_block : last_block_seg_num), &oct_ranges[i * ray_num], lidar_param.x, lidar_param.z, pose.z
         );
     }
     CUDA_CHECK_RETURN(cudaDeviceSynchronize());
