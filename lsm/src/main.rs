@@ -1,6 +1,8 @@
 mod cuda_helper;
 mod map_io;
 mod viz;
+mod ctrl;
+mod utils;
 
 // pub fn deallocateFixed();
 // pub fn deallocateDevice();

@@ -1,6 +1,5 @@
 use std::fs;
-use serde_json::Result;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use nannou::prelude::*;
 use std::io::{prelude::*, BufReader};
 use std::f32::consts::PI;
@@ -9,19 +8,36 @@ use crate::cuda_helper::{Vec2_cuda, Vec3_cuda, self};
 pub type Mesh = Vec<Point2>;
 pub type Meshes = Vec<Mesh>;
 
-#[derive(Serialize, Deserialize)]
-pub struct Config {
-    pub angle_min: f32,
-    pub angle_max: f32,
-    pub angle_inc: f32,
-    pub lidar_noise_k: f32,
+#[derive(Deserialize)]
+pub struct LidarConfig {
+    pub amin: f32,
+    pub amax: f32,
+    pub ainc: f32,
+    pub noise_k: f32
+}
 
-    pub translation_speed: f32,
-    pub rotation_speed: f32,
+#[derive(Deserialize)]
+pub struct ScannerConfig {
+    pub t_vel: f32,
+    pub r_vel: f32,
     pub pid_kp: f32,
     pub pid_ki: f32,
     pub pid_kd: f32,
-    pub map_path: String
+}
+
+
+#[derive(Deserialize)]
+pub struct ScreenConfig {
+    pub width: u32,
+    pub height: u32
+}
+
+#[derive(Deserialize)]
+pub struct Config {
+    pub lidar: LidarConfig,
+    pub robot: ScannerConfig,
+    pub screen: ScreenConfig,
+    pub map_path: String,
 }
 
 pub fn parse_map_file(filepath: &str) -> Option<Meshes> {
@@ -73,12 +89,14 @@ pub fn get_ray_num(lidar_param: &Vec3_cuda) -> usize {
 }
 
 pub fn read_config(file_path: &str) -> Config  {
-    let mut config: Config = serde_json::from_str(file_path).ok().unwrap();
-    config.angle_min = config.angle_min * PI / 180.;
-    config.angle_max = config.angle_max * PI / 180.;
-    config.angle_inc = config.angle_inc * PI / 360.;
-    config.angle_min += config.angle_inc / 2.0;
-    config.angle_max -= config.angle_inc / 2.0;
+    let file: fs::File = fs::File::open(file_path).ok().unwrap();
+    let reader = BufReader::new(file);
+    let mut config: Config = serde_json::from_reader(reader).ok().unwrap();
+    config.lidar.amin = config.lidar.amin * PI / 180.;
+    config.lidar.amax = config.lidar.amax * PI / 180.;
+    config.lidar.ainc = config.lidar.ainc * PI / 360.;
+    config.lidar.amin += config.lidar.ainc / 2.0;
+    config.lidar.amax -= config.lidar.ainc / 2.0;
     config
 }
 

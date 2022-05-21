@@ -1,0 +1,23 @@
+{
+    "lidar":{
+        "amin": -120.0,
+        "amax": 120.0,
+        "ainc": 0.25,
+        "noise_k": 0.0
+    },
+
+    "robot": {
+        "t_vel": 2.0,
+        "r_vel": 1.0,
+        "pid_kp": 0.2,
+        "pid_ki": 0.001,
+        "pid_kd": 0.01
+    },
+    
+    "screen": {
+        "width": 1200,
+        "height": 900
+    },
+    
+    "map_path": "../maps/test.txt"
+}
