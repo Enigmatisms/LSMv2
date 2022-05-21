@@ -138,19 +138,18 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
         .y(model.pose.y)
         .color(STEELBLUE);
 
-    if model.initialized == false {
-        let start_pos = pt2(model.pose.x, model.pose.y);
-        let dir = model.mouse_pos - start_pos;
-        let norm = (dir.x * dir.x + dir.y * dir.y + 1e-5).sqrt();
-        draw.arrow()
-            .start(start_pos)
-            .end(start_pos + dir * 50. / norm)
-            .weight(2.)
-            .color(MEDIUMSPRINGGREEN);
-    } else {
+    if model.initialized == true {
         visualize_rays(&draw, &model.ranges, &model.pose, &model.lidar_param, model.ray_num / 3);
     }
-
+        
+    let start_pos = pt2(model.pose.x, model.pose.y);
+    let dir = model.mouse_pos - start_pos;
+    let norm = (dir.x * dir.x + dir.y * dir.y + 1e-5).sqrt();
+    draw.arrow()
+        .start(start_pos)
+        .end(start_pos + dir * 40. / norm)
+        .weight(2.)
+        .color(MEDIUMSPRINGGREEN);
 
     // Write the result of our drawing to the window's frame.
     draw.to_frame(app, &frame).unwrap();
@@ -170,5 +169,5 @@ fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar
             .end(end_p)
             .weight(1.)
             .color(RED);
-    } 
+    }
 }
