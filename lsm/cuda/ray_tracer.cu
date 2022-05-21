@@ -1,3 +1,5 @@
+#include <curand.h>
+#include <curand_kernel.h>
 #include "cuda_err_check.hpp"
 #include "ray_tracer.hpp"
 
@@ -107,9 +109,11 @@ __global__ void getMininumRangeKernel(const float* const oct_ranges, float* cons
     output[range_base] = min_range * (1 - min_range_negative) + 1e6 * min_range_negative;
 }
 
-__global__ void sparsifyScan(const float* const denser, float* const sparser) {
+__global__ void sparsifyScan(const float* const denser, float* const sparser, float noise_level, int rand_offset) {
     // ray_per_block will be 120
+    curandState rand_state;
     const int output_base = blockDim.x * blockIdx.x + threadIdx.x, input_base = output_base * 3;
+    curand_init(output_base, 0, rand_offset, &rand_state);
     float r_sum = 0.0f;
     int avg_cnt = 0;
     for (int i = 0; i < 3; i++) {
@@ -119,7 +123,9 @@ __global__ void sparsifyScan(const float* const denser, float* const sparser) {
         avg_cnt += range_valid;
     }
     if (avg_cnt > 0) {
-        sparser[output_base] = (r_sum / float(avg_cnt));
+        const float range = r_sum / float(avg_cnt);
+        const float noise = max(-3.5f, min(3.5f, range * curand_normal(&rand_state) * 0.005));
+        sparser[output_base] = range + noise;
     } else {
         sparser[output_base] = 1e6;
     }

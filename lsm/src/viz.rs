@@ -6,8 +6,8 @@ use crate::utils;
 
 pub struct WindowCtrl {
     window_id: WindowId,
-    win_w: u32,
-    win_h: u32,
+    win_w: f32,
+    win_h: f32,
     pub exit_func: fn(app: &App)
 }
 
@@ -21,6 +21,7 @@ pub struct Model {
     pub mouse_pos: Point2,
 
     lidar_param: cuda_helper::Vec3_cuda,
+    lidar_noise: libc::c_float,
     ray_num: usize,
     ranges: Vec<libc::c_float>,
     pub initialized: bool
@@ -52,7 +53,6 @@ pub fn model(app: &App) -> Model {
         .unwrap();
 
     app.set_exit_on_escape(false);
-    println!("File path: {}", config.map_path);
     let meshes: map_io::Meshes = map_io::parse_map_file(config.map_path.as_str()).unwrap();
     let mut seg_point_arr: Vec<cuda_helper::Vec2_cuda> = Vec::new();
     let seg_num = map_io::meshes_to_segments(&meshes, &mut seg_point_arr);
@@ -68,7 +68,7 @@ pub fn model(app: &App) -> Model {
         map_points: meshes, 
         wctrl: WindowCtrl {
             window_id: window_id,
-            win_w: 1200, win_h: 900,
+            win_w: config.screen.width as f32, win_h: config.screen.height as f32,
             exit_func: exit,
         },
         pose: pt3(0., 0., 0.),
@@ -77,6 +77,7 @@ pub fn model(app: &App) -> Model {
         velo_max: pt2(config.robot.t_vel, config.robot.r_vel),
         mouse_pos: pt2(0., 0.),
         lidar_param: lidar_param,
+        lidar_noise: config.lidar.noise_k,
         ray_num: ray_num,
         ranges: vec![0.; ray_num],
         initialized: false
@@ -87,12 +88,16 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
     static mut LOCAL_INT: f32 = 0.0;
     static mut LOCAL_DIFF: f32 = 0.0;
     if _model.initialized == false {return;}
-    let tmp_x = _model.pose.x +_model.velo.x; 
-    let tmp_y = _model.pose.y +_model.velo.y; 
-    if tmp_x > -600. && tmp_x < 600. {
+    let sina = _model.pose.z.sin();
+    let cosa = _model.pose.z.cos();
+    let tmp_x = _model.pose.x +_model.velo.x * cosa - _model.velo.y * sina; 
+    let tmp_y = _model.pose.y +_model.velo.x * sina + _model.velo.y * cosa; 
+    let half_width = _model.wctrl.win_w / 2.;
+    let half_height = _model.wctrl.win_h / 2.;
+    if tmp_x > -half_width && tmp_x < half_width {
         _model.pose.x = tmp_x;
     }
-    if tmp_y > -450. && tmp_y < 450. {
+    if tmp_y > -half_height && tmp_y < half_height {
         _model.pose.y = tmp_y;
     }
 
@@ -104,9 +109,9 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
         let kd_val = diff - LOCAL_DIFF;
         LOCAL_DIFF = diff;
         _model.pose.z += _model.pid.x * diff + _model.pid.y * LOCAL_INT + _model.pid.z * kd_val;
-        
+        _model.pose.z = utils::good_angle(_model.pose.z);
         let pose = cuda_helper::Vec3_cuda {x:_model.pose.x, y:_model.pose.y, z:_model.pose.z};
-        cuda_helper::rayTraceRender(&_model.lidar_param, &pose, _model.ray_num as i32, _model.ranges.as_mut_ptr());
+        cuda_helper::rayTraceRender(&_model.lidar_param, &pose, _model.ray_num as i32, _model.lidar_noise, _model.ranges.as_mut_ptr());
     }
 }
 
@@ -155,7 +160,7 @@ fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar
     let cur_angle_min = pose.z + lidar_param.x + lidar_param.z;
     for i in 0..ray_num {
         let r = ranges[i];
-        if r > 1e5 {continue;}
+        // if r > 1e5 {continue;}
         let cur_angle = cur_angle_min + lidar_param.z * 3. * (i as f32);
         let dir = pt2( cur_angle.cos(), cur_angle.sin());
         let start_p = pt2(pose.x, pose.y);

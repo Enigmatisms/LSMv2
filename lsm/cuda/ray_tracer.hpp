@@ -60,4 +60,4 @@ __global__ void rayTraceKernel(
 
 __global__ void getMininumRangeKernel(const float* const oct_ranges, float* const output, int range_num);
 
-__global__ void sparsifyScan(const float* const denser, float* const sparser);
+__global__ void sparsifyScan(const float* const denser, float* const sparser, float noise_level, int rand_offset);

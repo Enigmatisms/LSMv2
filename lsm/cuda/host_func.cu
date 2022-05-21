@@ -60,7 +60,8 @@ void unwrapMeshes(MeshConstPtr meshes, int seg_num, bool initialized) {
 }
 
 // export
-void rayTraceRender(const Vec3& lidar_param, const Vec3& pose, int ray_num, float* range) {
+void rayTraceRender(const Vec3& lidar_param, const Vec3& pose, int ray_num, float noise_level, float* range) {
+    static int rand_offset = 0;
     // 对于静态地图而言，由于场景无需频繁update，unwrapMeshes函数调用频率低，则可以省略内存allocation操作
     const int lidar_ray_blocks = ray_num / DEPTH_DIV_NUM;
     const short num_blocks = static_cast<short>(ceilf(total_seg_num / 256.f));          // 面片数 / 128
@@ -87,9 +88,10 @@ void rayTraceRender(const Vec3& lidar_param, const Vec3& pose, int ray_num, floa
         cudaStreamDestroy(streams[i]);
     getMininumRangeKernel<<<lidar_ray_blocks, DEPTH_DIV_NUM>>>(oct_ranges, final_dense_ranges, ray_num);
     CUDA_CHECK_RETURN(cudaDeviceSynchronize());
-    sparsifyScan<<<lidar_ray_blocks, DEPTH_DIV_NUM / 3>>>(final_dense_ranges, final_sparse_ranges);
+    sparsifyScan<<<lidar_ray_blocks, DEPTH_DIV_NUM / 3>>>(final_dense_ranges, final_sparse_ranges, noise_level, rand_offset);
     CUDA_CHECK_RETURN(cudaDeviceSynchronize());
     // 注意range的大小应该提前确定
     CUDA_CHECK_RETURN(cudaMemcpy(range, final_sparse_ranges, sizeof(float) * ray_num / 3, cudaMemcpyDeviceToHost));
+    rand_offset ++;
 }
 }
