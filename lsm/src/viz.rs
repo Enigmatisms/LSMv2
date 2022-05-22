@@ -3,36 +3,14 @@ use crate::cuda_helper;
 use crate::map_io;
 use crate::ctrl;
 use crate::utils;
+use crate::model::Model;
 
-pub struct WindowCtrl {
-    window_id: WindowId,
-    win_w: f32,
-    win_h: f32,
-    pub exit_func: fn(app: &App)
-}
-
-pub struct Model {
-    map_points: Vec<Vec<Point2>>,
-    pub wctrl: WindowCtrl,
-    pub pose: Point3,
-    pub velo: Point3,
-    pub pid: Point3,
-    pub velo_max: Point2,
-    pub mouse_pos: Point2,
-
-    lidar_param: cuda_helper::Vec3_cuda,
-    lidar_noise: libc::c_float,
-    ray_num: usize,
-    ranges: Vec<libc::c_float>,
-    pub initialized: bool
-}
-
-fn exit(app: &App) {
-    unsafe {
-        cuda_helper::deallocateFixed();
-        cuda_helper::deallocateDevice();
-    }
-    app.quit();
+fn local_mouse_position(_app: &App, _model: & Model) -> Point2 {
+    let mut mouse = _app.mouse.position();
+    mouse -= _model.wtrans.t;
+    let rotation_inv= utils::get_rotation(&-_model.wtrans.rot);
+    mouse = rotation_inv.mul_vec2(mouse);
+    mouse / _model.wtrans.scale
 }
 
 pub fn model(app: &App) -> Model {
@@ -54,34 +32,16 @@ pub fn model(app: &App) -> Model {
 
     app.set_exit_on_escape(false);
     let meshes: map_io::Meshes = map_io::parse_map_file(config.map_path.as_str()).unwrap();
-    let mut seg_point_arr: Vec<cuda_helper::Vec2_cuda> = Vec::new();
-    let seg_num = map_io::meshes_to_segments(&meshes, &mut seg_point_arr);
     let lidar_param = cuda_helper::Vec3_cuda{x: config.lidar.amin, y: config.lidar.amax, z:config.lidar.ainc};
     let ray_num = map_io::get_ray_num(&lidar_param);
-
+    let mut seg_point_arr: Vec<cuda_helper::Vec2_cuda> = Vec::new();
+    let seg_num = map_io::meshes_to_segments(&meshes, &mut seg_point_arr);
     unsafe {
         cuda_helper::intializeFixed(ray_num as libc::c_int);
         cuda_helper::unwrapMeshes(seg_point_arr.as_ptr(), seg_num as libc::c_int, false);
     }
 
-    Model {
-        map_points: meshes, 
-        wctrl: WindowCtrl {
-            window_id: window_id,
-            win_w: config.screen.width as f32, win_h: config.screen.height as f32,
-            exit_func: exit,
-        },
-        pose: pt3(0., 0., 0.),
-        velo: pt3(0., 0., 0.),
-        pid: pt3(config.robot.pid_kp, config.robot.pid_ki, config.robot.pid_kd),
-        velo_max: pt2(config.robot.t_vel, config.robot.r_vel),
-        mouse_pos: pt2(0., 0.),
-        lidar_param: lidar_param,
-        lidar_noise: config.lidar.noise_k,
-        ray_num: ray_num,
-        ranges: vec![0.; ray_num],
-        initialized: false
-    }
+    Model::new(window_id, &config, meshes, lidar_param, ray_num)
 }
 
 pub fn update(_app: &App, _model: &mut Model, _: Update) {
@@ -101,7 +61,8 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
         _model.pose.y = tmp_y;
     }
 
-    let dir = _model.mouse_pos - pt2(_model.pose.x, _model.pose.y);
+    let mouse = local_mouse_position(_app, _model);
+    let dir = mouse - pt2(_model.pose.x, _model.pose.y);
     let target_angle = dir.y.atan2(dir.x);
     let diff = utils::good_angle(target_angle - _model.pose.z);
     unsafe {
@@ -115,11 +76,24 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
     }
 }
 
+
+
 pub fn event(_app: &App, _model: &mut Model, event: WindowEvent) {}
 
 pub fn view(app: &App, model: &Model, frame: Frame) {
-    // Begin drawing
-    let draw = app.draw();
+    let mut draw = app.draw();
+
+    draw = draw
+        .x_y(model.wtrans.t.x, model.wtrans.t.y)
+        .rotate(model.wtrans.rot)
+        .scale_x(model.wtrans.scale)
+        .scale_y(model.wtrans.scale);
+
+    if model.plot_config.draw_grid == true {
+        let win = app.main_window().rect();
+        draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, 0.01);
+        draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, 0.01);
+    }
 
     draw.background().color(BLACK);
     for mesh in model.map_points.iter() {
@@ -143,7 +117,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     }
         
     let start_pos = pt2(model.pose.x, model.pose.y);
-    let dir = model.mouse_pos - start_pos;
+    let dir = local_mouse_position(app, model) - start_pos;
     let norm = (dir.x * dir.x + dir.y * dir.y + 1e-5).sqrt();
     draw.arrow()
         .start(start_pos)
@@ -169,5 +143,27 @@ fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar
             .end(end_p)
             .weight(1.)
             .color(RED);
+    }
+}
+
+fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
+    let step_by = || (0..).map(|i| i as f32 * step);
+    let r_iter = step_by().take_while(|&f| f < win.right());
+    let l_iter = step_by().map(|f| -f).take_while(|&f| f > win.left());
+    let x_iter = r_iter.chain(l_iter);
+    for x in x_iter {
+        draw.line()
+            .weight(weight)
+            .rgba(1., 1., 1., alpha)
+            .points(pt2(x, win.bottom()), pt2(x, win.top()));
+    }
+    let t_iter = step_by().take_while(|&f| f < win.top());
+    let b_iter = step_by().map(|f| -f).take_while(|&f| f > win.bottom());
+    let y_iter = t_iter.chain(b_iter);
+    for y in y_iter {
+        draw.line()
+            .weight(weight)
+            .rgba(1., 1., 1., alpha)
+            .points(pt2(win.left(), y), pt2(win.right(), y));
     }
 }
