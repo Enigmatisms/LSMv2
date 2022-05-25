@@ -38,7 +38,8 @@ pub struct Model {
     pub lidar_noise: libc::c_float,
     pub ray_num: usize,
     pub ranges: Vec<libc::c_float>,
-    pub initialized: bool
+    pub initialized: bool,
+    pub grid_size: f32,
 }
 
 impl Model {
@@ -65,7 +66,8 @@ impl Model {
             lidar_noise: config.lidar.noise_k,
             ray_num: ray_num,
             ranges: vec![0.; ray_num],
-            initialized: false
+            initialized: false,
+            grid_size: config.grid_size
         }
     }
 }

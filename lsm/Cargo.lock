@@ -54,6 +54,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "array2d"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "077c75d1da5ee0a13ceeb822546050ab9d6f3e9a6c7cd1d0ce88518a336bfb48"
+
+[[package]]
 name = "arrayvec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -988,6 +994,7 @@ dependencies = [
 name = "lsm"
 version = "0.1.0"
 dependencies = [
+ "array2d",
  "cc",
  "libc",
  "nannou",

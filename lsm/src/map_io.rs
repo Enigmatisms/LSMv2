@@ -38,6 +38,7 @@ pub struct Config {
     pub robot: ScannerConfig,
     pub screen: ScreenConfig,
     pub map_path: String,
+    pub grid_size: f32
 }
 
 pub fn parse_map_file(filepath: &str) -> Option<Meshes> {
