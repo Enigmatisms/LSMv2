@@ -1,6 +1,8 @@
 use nannou::prelude::*;
+use array2d::Array2D;
 use crate::cuda_helper;
 use crate::map_io;
+use crate::grid;
 
 pub struct WindowCtrl {
     pub window_id: WindowId,
@@ -26,6 +28,8 @@ pub struct PlotConfig {
 
 pub struct Model {
     pub map_points: Vec<Vec<Point2>>,
+    pub grid_specs: (f32, f32, f32, f32),
+    pub occ_grid: Array2D<i32>,
     pub plot_config: PlotConfig,
     pub wctrl: WindowCtrl,
     pub wtrans: WindowTransform,
@@ -44,8 +48,13 @@ pub struct Model {
 
 impl Model {
     pub fn new(window_id:  WindowId, config: &map_io::Config, meshes: map_io::Meshes, lidar_param: cuda_helper::Vec3_cuda, ray_num: usize) -> Model {
+        let grid_specs = grid::get_bounds(&meshes, config.grid_size);
+        let mut occ_grid = Array2D::filled_with(-1, grid_specs.3 as usize, grid_specs.2 as usize);
+        grid::line_drawing(&mut occ_grid, &meshes, grid_specs.0, grid_specs.1, config.grid_size);
         Model {
             map_points: meshes, 
+            occ_grid: occ_grid,
+            grid_specs: grid_specs,
             plot_config: PlotConfig {
                 draw_grid: false, grid_step: 100.0,
             },

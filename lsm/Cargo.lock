@@ -55,9 +55,9 @@ dependencies = [
 
 [[package]]
 name = "array2d"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "077c75d1da5ee0a13ceeb822546050ab9d6f3e9a6c7cd1d0ce88518a336bfb48"
+checksum = "224b2db9d3e7dd068c8b07b186076ee668ce38810d0ba12c80dacbcbb7cfc9e8"
 
 [[package]]
 name = "arrayvec"

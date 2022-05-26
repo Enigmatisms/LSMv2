@@ -1,9 +1,11 @@
 use nannou::prelude::*;
+use array2d::Array2D;
 use crate::cuda_helper;
 use crate::map_io;
 use crate::ctrl;
 use crate::utils;
 use crate::model::Model;
+
 
 fn local_mouse_position(_app: &App, _model: & Model) -> Point2 {
     let mut mouse = _app.mouse.position();
@@ -55,10 +57,18 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
     let half_width = _model.wctrl.win_w / 2.;
     let half_height = _model.wctrl.win_h / 2.;
     if tmp_x > -half_width && tmp_x < half_width {
-        _model.pose.x = tmp_x;
+        let grid_x = ((tmp_x - _model.grid_specs.0) / _model.grid_size).floor() as usize;
+        let grid_y = ((_model.pose.y - _model.grid_specs.1) / _model.grid_size).floor() as usize;
+        if _model.occ_grid[(grid_y, grid_x)] == -1 {
+            _model.pose.x = tmp_x;
+        }
     }
     if tmp_y > -half_height && tmp_y < half_height {
-        _model.pose.y = tmp_y;
+        let grid_x = ((_model.pose.x - _model.grid_specs.0) / _model.grid_size).floor() as usize;
+        let grid_y = ((tmp_y - _model.grid_specs.1) / _model.grid_size).floor() as usize;
+        if _model.occ_grid[(grid_y, grid_x)] == -1 {
+            _model.pose.y = tmp_y;
+        }
     }
 
     let mouse = local_mouse_position(_app, _model);
@@ -114,6 +124,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     if model.initialized == true {
         visualize_rays(&draw, &model.ranges, &model.pose, &model.lidar_param, model.ray_num / 3);
+        draw_occ_grids(&draw, &model.occ_grid, model.grid_specs.0, model.grid_specs.1, model.grid_size);
     }
         
     let start_pos = pt2(model.pose.x, model.pose.y);
@@ -144,6 +155,24 @@ fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar
             .weight(1.)
             .color(RED);
     }
+}
+
+fn draw_occ_grids(draw: &Draw, occ_grid: &Array2D<i32>, off_x: f32, off_y: f32, grid_size: f32) {
+    let map_rows = occ_grid.column_len();
+    let map_cols = occ_grid.row_len();
+    for i in 0..map_rows {
+        for j in 0..map_cols {
+            let color = match occ_grid[(i, j)] {
+                -2 => {(1., 0., 0.)},
+                -1 => {(0., 0., 0.)},
+                _ => {(0., 0., 1.)}
+            };
+            draw.rect()
+                .rgba(color.0, color.1, color.2, 0.2)
+                .w_h(grid_size, grid_size)
+                .x_y(off_x + grid_size * (j as f32 + 0.5), off_y + grid_size * (i as f32 + 0.5));
+        }
+    } 
 }
 
 fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {

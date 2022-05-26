@@ -5,9 +5,9 @@ use crate::model::Model;
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
         Key::W => {_model.velo.x = _model.velo_max.x;},
-        Key::A => {_model.velo.y = -_model.velo_max.x;},
+        Key::A => {_model.velo.y = _model.velo_max.x;},
         Key::S => {_model.velo.x = -_model.velo_max.x;},
-        Key::D => {_model.velo.y = _model.velo_max.x;},
+        Key::D => {_model.velo.y = -_model.velo_max.x;},
         Key::Escape => {
             (_model.wctrl.exit_func)(_app);
         },

@@ -11,7 +11,7 @@
         "r_vel": 1.0,
         "pid_kp": 0.2,
         "pid_ki": 0.0005,
-        "pid_kd": 0.002
+        "pid_kd": 0.01
     },
     
     "screen": {
@@ -20,5 +20,5 @@
     },
 
     "map_path": "../maps/test.txt",
-    "grid_size": 50.0
+    "grid_size": 25.0
 }
