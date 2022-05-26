@@ -101,6 +101,7 @@ fn single_line(occ_grid: &mut Array2D<i32>, normal: &Point2, start_m: f32, end_m
     }
 }
 
+// return true means not collided, can move
 pub fn collision_detection(occ_grid: &Array2D<i32>, meshes: &Vec<Vec<Point2>>, x: f32, y: f32, grid_size: f32, offset: &Point2) -> bool {
     let grid_x = ((x - offset.x) / grid_size) as usize;
     let grid_y = ((y - offset.y) / grid_size) as usize;
@@ -109,12 +110,23 @@ pub fn collision_detection(occ_grid: &Array2D<i32>, meshes: &Vec<Vec<Point2>>, x
         if mesh_id == -2 {return false;}
         let mesh = &meshes[mesh_id as usize];
         let mesh_len = mesh.len();
+        let mut inter_cnt = 0;
         for i in 0..mesh_len {
             let sp = &mesh[i];
             let ep = &mesh[(i + 1) % mesh_len];             // 返回初始点
+            if (y < sp.y && y > ep.y) || (y < ep.y && y > sp.y) {
+                let dir = *ep - *sp;
+                if dir.y.abs() > 1e-6 {                 // 平行于x轴边不计算
+                    let tar_x = (y - sp.y) * dir.x / dir.y + sp.x;
+                    if tar_x < x {          // 向左发出的射线
+                        inter_cnt += 1;
+                    }
+                }
+            }
         }
+        return (inter_cnt & 1) == 0;
     }
-    return false;
+    return true;
 }
 
 #[inline(always)]

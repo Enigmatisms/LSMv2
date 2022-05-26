@@ -5,6 +5,7 @@ use crate::map_io;
 use crate::ctrl;
 use crate::utils;
 use crate::model::Model;
+use crate::grid::collision_detection;
 
 
 fn local_mouse_position(_app: &App, _model: & Model) -> Point2 {
@@ -57,16 +58,18 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
     let half_width = _model.wctrl.win_w / 2.;
     let half_height = _model.wctrl.win_h / 2.;
     if tmp_x > -half_width && tmp_x < half_width {
-        let grid_x = ((tmp_x - _model.grid_specs.0) / _model.grid_size).floor() as usize;
-        let grid_y = ((_model.pose.y - _model.grid_specs.1) / _model.grid_size).floor() as usize;
-        if _model.occ_grid[(grid_y, grid_x)] == -1 {
+        if collision_detection(
+            &_model.occ_grid, &_model.map_points, tmp_x, _model.pose.y, 
+            _model.grid_size, &pt2(_model.grid_specs.0, _model.grid_specs.1)
+        ) {
             _model.pose.x = tmp_x;
         }
     }
     if tmp_y > -half_height && tmp_y < half_height {
-        let grid_x = ((_model.pose.x - _model.grid_specs.0) / _model.grid_size).floor() as usize;
-        let grid_y = ((tmp_y - _model.grid_specs.1) / _model.grid_size).floor() as usize;
-        if _model.occ_grid[(grid_y, grid_x)] == -1 {
+        if collision_detection(
+            &_model.occ_grid, &_model.map_points, _model.pose.x, tmp_y, 
+            _model.grid_size, &pt2(_model.grid_specs.0, _model.grid_specs.1)
+        ) {
             _model.pose.y = tmp_y;
         }
     }
