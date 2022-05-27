@@ -1,5 +1,5 @@
 // use 
-use lsm::sim::viz;
+use lsm::edit::viz;
 
 fn main() {
     nannou::app(viz::model).update(viz::update).run();

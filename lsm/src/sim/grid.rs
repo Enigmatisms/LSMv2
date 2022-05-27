@@ -66,9 +66,6 @@ pub fn line_drawing(occ_grid: &mut Array2D<i32>, meshes: &Vec<Vec<Point2>>, off_
 }
 
 // ==================== private functions =========================
-// @param dir_m 主轴递增？递减？
-// @param start_m 主轴的起始位置, end_m 主轴结束位置
-// @param offset_s 为副轴的起始位置
 fn single_line(occ_grid: &mut Array2D<i32>, normal: &Point2, start_m: f32, end_m: f32, k: f32, offset_s: f32, polygon_id: i32, x_main: bool) {
     let s_m = start_m.ceil() as usize;
     let e_m = end_m.ceil() as usize;
@@ -102,9 +99,13 @@ fn single_line(occ_grid: &mut Array2D<i32>, normal: &Point2, start_m: f32, end_m
 }
 
 // return true means not collided, can move
-pub fn collision_detection(occ_grid: &Array2D<i32>, meshes: &Vec<Vec<Point2>>, x: f32, y: f32, grid_size: f32, offset: &Point2) -> bool {
-    let grid_x = ((x - offset.x) / grid_size) as usize;
-    let grid_y = ((y - offset.y) / grid_size) as usize;
+pub fn collision_detection(occ_grid: &Array2D<i32>, meshes: &Vec<Vec<Point2>>, x: f32, y: f32, grid_size: f32, specs: &(f32, f32, f32, f32)) -> bool {
+    let grid_x = (x - specs.0) / grid_size;
+    let grid_y = (y - specs.1) / grid_size;
+    if grid_x < 0. || grid_x >= specs.2 {return false;}
+    if grid_y < 0. || grid_y >= specs.3 {return false;}
+    let grid_x = grid_x.floor() as usize;
+    let grid_y = grid_y.floor() as usize;
     let mesh_id = occ_grid[(grid_y, grid_x)];
     if mesh_id != -1 {
         if mesh_id == -2 {return false;}

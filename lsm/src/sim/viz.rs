@@ -1,23 +1,16 @@
 use nannou::prelude::*;
 use array2d::Array2D;
 use super::cuda_helper;
-use super::map_io;
 use super::ctrl;
-use super::utils;
 use super::model::Model;
 use super::grid::collision_detection;
 
-
-fn local_mouse_position(_app: &App, _model: & Model) -> Point2 {
-    let mut mouse = _app.mouse.position();
-    mouse -= _model.wtrans.t;
-    let rotation_inv= utils::get_rotation(&-_model.wtrans.rot);
-    mouse = rotation_inv.mul_vec2(mouse);
-    mouse / _model.wtrans.scale
-}
+use crate::utils::utils;
+use crate::utils::map_io;
+use crate::utils::plot;
 
 pub fn model(app: &App) -> Model {
-    let config: map_io::Config = map_io::read_config("../config/config.json");
+    let config: map_io::Config = map_io::read_config("../config/simulator_config.json");
 
     let window_id = app
         .new_window()
@@ -55,26 +48,18 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
     let cosa = _model.pose.z.cos();
     let tmp_x = _model.pose.x +_model.velo.x * cosa - _model.velo.y * sina; 
     let tmp_y = _model.pose.y +_model.velo.x * sina + _model.velo.y * cosa; 
-    let half_width = _model.wctrl.win_w / 2.;
-    let half_height = _model.wctrl.win_h / 2.;
-    if tmp_x > -half_width && tmp_x < half_width {
-        if collision_detection(
-            &_model.occ_grid, &_model.map_points, tmp_x, _model.pose.y, 
-            _model.grid_size, &pt2(_model.grid_specs.0, _model.grid_specs.1)
-        ) {
-            _model.pose.x = tmp_x;
-        }
+    if collision_detection(
+        &_model.occ_grid, &_model.map_points, tmp_x, _model.pose.y, _model.grid_size, &_model.grid_specs
+    ) {
+        _model.pose.x = tmp_x;
     }
-    if tmp_y > -half_height && tmp_y < half_height {
-        if collision_detection(
-            &_model.occ_grid, &_model.map_points, _model.pose.x, tmp_y, 
-            _model.grid_size, &pt2(_model.grid_specs.0, _model.grid_specs.1)
-        ) {
-            _model.pose.y = tmp_y;
-        }
+    if collision_detection(
+        &_model.occ_grid, &_model.map_points, _model.pose.x, tmp_y, _model.grid_size, &_model.grid_specs
+    ) {
+        _model.pose.y = tmp_y;
     }
 
-    let mouse = local_mouse_position(_app, _model);
+    let mouse = plot::local_mouse_position(_app, &_model.wtrans);
     let dir = mouse - pt2(_model.pose.x, _model.pose.y);
     let target_angle = dir.y.atan2(dir.x);
     let diff = utils::good_angle(target_angle - _model.pose.z);
@@ -89,21 +74,15 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
     }
 }
 
-pub fn event(_app: &App, _model: &mut Model, event: WindowEvent) {}
+pub fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {}
 
 pub fn view(app: &App, model: &Model, frame: Frame) {
-    let mut draw = app.draw();
-
-    draw = draw
-        .x_y(model.wtrans.t.x, model.wtrans.t.y)
-        .rotate(model.wtrans.rot)
-        .scale_x(model.wtrans.scale)
-        .scale_y(model.wtrans.scale);
+    let draw = plot::window_transform(app.draw(), &model.wtrans);
 
     if model.plot_config.draw_grid == true {
         let win = app.main_window().rect();
-        draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, 0.01);
-        draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, 0.01);
+        plot::draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, 0.01);
+        plot::draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, 0.01);
     }
 
     draw.background().color(BLACK);
@@ -129,7 +108,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     }
         
     let start_pos = pt2(model.pose.x, model.pose.y);
-    let dir = local_mouse_position(app, model) - start_pos;
+    let dir = plot::local_mouse_position(app, &model.wtrans) - start_pos;
     let norm = (dir.x * dir.x + dir.y * dir.y + 1e-5).sqrt();
     draw.arrow()
         .start(start_pos)
@@ -158,30 +137,8 @@ fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar
     }
 }
 
-
-fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
-    let step_by = || (0..).map(|i| i as f32 * step);
-    let r_iter = step_by().take_while(|&f| f < win.right());
-    let l_iter = step_by().map(|f| -f).take_while(|&f| f > win.left());
-    let x_iter = r_iter.chain(l_iter);
-    for x in x_iter {
-        draw.line()
-            .weight(weight)
-            .rgba(1., 1., 1., alpha)
-            .points(pt2(x, win.bottom()), pt2(x, win.top()));
-        }
-        let t_iter = step_by().take_while(|&f| f < win.top());
-    let b_iter = step_by().map(|f| -f).take_while(|&f| f > win.bottom());
-    let y_iter = t_iter.chain(b_iter);
-    for y in y_iter {
-        draw.line()
-            .weight(weight)
-            .rgba(1., 1., 1., alpha)
-            .points(pt2(win.left(), y), pt2(win.right(), y));
-    }
-}
-
 // debug occupancy grid visualization
+#[allow(dead_code)]
 fn draw_occ_grids(draw: &Draw, occ_grid: &Array2D<i32>, off_x: f32, off_y: f32, grid_size: f32) {
     let map_rows = occ_grid.column_len();
     let map_cols = occ_grid.row_len();

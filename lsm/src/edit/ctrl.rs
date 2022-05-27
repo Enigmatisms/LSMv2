@@ -1,27 +1,15 @@
 use nannou::prelude::*;
-use super::utils;
 use super::model::Model;
+use crate::utils::utils;
 
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
-        Key::W => {_model.velo.x = _model.velo_max.x;},
-        Key::A => {_model.velo.y = _model.velo_max.x;},
-        Key::S => {_model.velo.x = -_model.velo_max.x;},
-        Key::D => {_model.velo.y = -_model.velo_max.x;},
-        Key::Escape => {
-            (_model.wctrl.exit_func)(_app);
-        },
         _ => {},
     }
 }
 
 pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
-        Key::W => {_model.velo.x = 0.0;},
-        Key::A => {_model.velo.y = 0.0;},
-        Key::S => {_model.velo.x = 0.0;},
-        Key::D => {_model.velo.y = 0.0;},
-        Key::P => {_model.plot_config.draw_grid = !_model.plot_config.draw_grid;},
         _ => {},
     }
 }
@@ -29,12 +17,9 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
 // initial position selection
 pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
     let point = _app.mouse.position();
-    if _model.initialized == false {
+    if _model.scrn_mov == false {
         match _button {
-            MouseButton::Left => {
-                _model.pose.x = point.x;
-                _model.pose.y = point.y;
-            },
+            MouseButton::Left => {},
             _ => {},
         }
     } else {
@@ -55,13 +40,9 @@ pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
 // mouse release will determine the initial angle
 pub fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
     let now_pos = _app.mouse.position();
-    if _model.initialized == false {
+    if _model.scrn_mov == false {
         match _button {
-            MouseButton::Left => {
-                let dir = now_pos - pt2(_model.pose.x, _model.pose.y);
-                _model.pose.z = dir.y.atan2(dir.x);
-                _model.initialized = true; 
-            },
+            MouseButton::Left => {},
             _ => {},
         }
     } else {

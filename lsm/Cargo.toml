@@ -18,5 +18,9 @@ array2d = "0.2.1"
 cc = "1.0"
 
 [[bin]]
-name="simulator"
+name="sim"
 path="src/bin/simulator.rs"
+
+[[bin]]
+name="edit"
+path="src/bin/editor.rs"

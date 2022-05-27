@@ -3,7 +3,7 @@ use serde::Deserialize;
 use nannou::prelude::*;
 use std::io::{prelude::*, BufReader};
 use std::f32::consts::PI;
-use super::cuda_helper::{Vec2_cuda, Vec3_cuda, self};
+use crate::sim::cuda_helper::{Vec2_cuda, Vec3_cuda, self};
 
 pub type Mesh = Vec<Point2>;
 pub type Meshes = Vec<Mesh>;

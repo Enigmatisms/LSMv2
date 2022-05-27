@@ -1,7 +1,3 @@
-pub mod cuda_helper;
-pub mod map_io;
-pub mod sim_viz;
-pub mod ctrl;
+pub mod sim;
 pub mod utils;
-pub mod model;
-pub mod grid;
+pub mod edit;
