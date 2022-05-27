@@ -19,6 +19,6 @@
         "height": 900
     },
 
-    "map_path": "../maps/test.txt",
+    "map_path": "../maps/standard5.txt",
     "grid_size": 25.0
 }

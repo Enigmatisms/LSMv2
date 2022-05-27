@@ -1,6 +1,6 @@
 use nannou::prelude::*;
-use crate::utils;
-use crate::model::Model;
+use super::utils;
+use super::model::Model;
 
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     match _key {

@@ -16,3 +16,7 @@ array2d = "0.2.1"
 
 [build-dependencies]
 cc = "1.0"
+
+[[bin]]
+name="simulator"
+path="src/bin/simulator.rs"

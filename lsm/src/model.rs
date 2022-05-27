@@ -1,8 +1,8 @@
 use nannou::prelude::*;
 use array2d::Array2D;
-use crate::cuda_helper;
-use crate::map_io;
-use crate::grid;
+use super::cuda_helper;
+use super::map_io;
+use super::grid;
 
 pub struct WindowCtrl {
     pub window_id: WindowId,

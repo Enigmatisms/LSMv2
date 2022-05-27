@@ -1,11 +1,11 @@
 use nannou::prelude::*;
 use array2d::Array2D;
-use crate::cuda_helper;
-use crate::map_io;
-use crate::ctrl;
-use crate::utils;
-use crate::model::Model;
-use crate::grid::collision_detection;
+use super::cuda_helper;
+use super::map_io;
+use super::ctrl;
+use super::utils;
+use super::model::Model;
+use super::grid::collision_detection;
 
 
 fn local_mouse_position(_app: &App, _model: & Model) -> Point2 {
@@ -89,8 +89,6 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
     }
 }
 
-
-
 pub fn event(_app: &App, _model: &mut Model, event: WindowEvent) {}
 
 pub fn view(app: &App, model: &Model, frame: Frame) {
@@ -127,7 +125,7 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     if model.initialized == true {
         visualize_rays(&draw, &model.ranges, &model.pose, &model.lidar_param, model.ray_num / 3);
-        draw_occ_grids(&draw, &model.occ_grid, model.grid_specs.0, model.grid_specs.1, model.grid_size);
+        // draw_occ_grids(&draw, &model.occ_grid, model.grid_specs.0, model.grid_specs.1, model.grid_size);
     }
         
     let start_pos = pt2(model.pose.x, model.pose.y);
@@ -160,6 +158,30 @@ fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar
     }
 }
 
+
+fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
+    let step_by = || (0..).map(|i| i as f32 * step);
+    let r_iter = step_by().take_while(|&f| f < win.right());
+    let l_iter = step_by().map(|f| -f).take_while(|&f| f > win.left());
+    let x_iter = r_iter.chain(l_iter);
+    for x in x_iter {
+        draw.line()
+            .weight(weight)
+            .rgba(1., 1., 1., alpha)
+            .points(pt2(x, win.bottom()), pt2(x, win.top()));
+        }
+        let t_iter = step_by().take_while(|&f| f < win.top());
+    let b_iter = step_by().map(|f| -f).take_while(|&f| f > win.bottom());
+    let y_iter = t_iter.chain(b_iter);
+    for y in y_iter {
+        draw.line()
+            .weight(weight)
+            .rgba(1., 1., 1., alpha)
+            .points(pt2(win.left(), y), pt2(win.right(), y));
+    }
+}
+
+// debug occupancy grid visualization
 fn draw_occ_grids(draw: &Draw, occ_grid: &Array2D<i32>, off_x: f32, off_y: f32, grid_size: f32) {
     let map_rows = occ_grid.column_len();
     let map_cols = occ_grid.row_len();
@@ -176,26 +198,4 @@ fn draw_occ_grids(draw: &Draw, occ_grid: &Array2D<i32>, off_x: f32, off_y: f32, 
                 .x_y(off_x + grid_size * (j as f32 + 0.5), off_y + grid_size * (i as f32 + 0.5));
         }
     } 
-}
-
-fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
-    let step_by = || (0..).map(|i| i as f32 * step);
-    let r_iter = step_by().take_while(|&f| f < win.right());
-    let l_iter = step_by().map(|f| -f).take_while(|&f| f > win.left());
-    let x_iter = r_iter.chain(l_iter);
-    for x in x_iter {
-        draw.line()
-            .weight(weight)
-            .rgba(1., 1., 1., alpha)
-            .points(pt2(x, win.bottom()), pt2(x, win.top()));
-    }
-    let t_iter = step_by().take_while(|&f| f < win.top());
-    let b_iter = step_by().map(|f| -f).take_while(|&f| f > win.bottom());
-    let y_iter = t_iter.chain(b_iter);
-    for y in y_iter {
-        draw.line()
-            .weight(weight)
-            .rgba(1., 1., 1., alpha)
-            .points(pt2(win.left(), y), pt2(win.right(), y));
-    }
 }
