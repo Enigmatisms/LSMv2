@@ -1,6 +1,7 @@
 use nannou::prelude::*;
 use super::ctrl;
 use super::model::Model;
+use super::mesh::screen_bounds;
 
 use crate::utils::map_io;
 use crate::utils::plot;
@@ -33,9 +34,7 @@ pub fn model(app: &App) -> Model {
     Model::new(window_id, &config)
 }
 
-pub fn update(_app: &App, _model: &mut Model, _: Update) {
-    
-}
+pub fn update(_app: &App, _model: &mut Model, _: Update) {}
 
 pub fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {}
 
@@ -44,8 +43,9 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
 
     if model.plot_config.draw_grid == true {
         let win = app.main_window().rect();
-        plot::draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, 0.01);
-        plot::draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, 0.01);
+        let bounds = screen_bounds(&model.map_points, &win, model.plot_config.grid_step);
+        plot::draw_grid(&draw, &bounds, model.plot_config.grid_step, 1.0, 0.01);
+        plot::draw_grid(&draw, &bounds, model.plot_config.grid_step / 5., 0.5, 0.01);
     }
 
     draw.background().color(BLACK);

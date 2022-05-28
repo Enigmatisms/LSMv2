@@ -63,3 +63,16 @@ impl Chain {
     }
 }
 
+pub fn screen_bounds(meshes: &Vec<Chain>, win: &Rect,  grid_size: f32) -> Rect<f32>  {
+    let mut bl = pt2(1e6, 1e6);
+    let mut tr = pt2(-1e6, -1e6);
+    for chain in meshes.iter() {
+        bl = bl.min(chain.bl);
+        tr = tr.max(chain.tr);
+    }
+    bl -= pt2(grid_size, grid_size);
+    tr += pt2(grid_size, grid_size);
+    bl = bl.min(win.bottom_left());
+    tr = tr.max(win.top_right());
+    Rect::from_corner_points(bl.to_array(), tr.to_array())
+}

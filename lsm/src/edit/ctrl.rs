@@ -21,19 +21,24 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
 
 pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
-        // _model.scrn and _model.obj are mutex to be true
-        Key::Return => {
-            // 如果当前map_points最后一个Vec点数大于2，则可以push新的Vec（相当于保存了）
+        Key::M => {                     // exiting vertex moving
+            _model.obj_mov = false;
+        },
+        Key::P => {                     // switch grid drawing mode
+            _model.plot_config.draw_grid = !_model.plot_config.draw_grid;
+        },
+        Key::H => {                     // Set screen offsets to zero
+            _model.wtrans.rot = 0.;
+            _model.wtrans.t = pt2(0., 0.);
+        },
+        Key::Return => {                // push valid point vector
             let last_vec = _model.map_points.last().unwrap();
             if last_vec.len() > 2 {
                 _model.map_points.push(Chain::new());
             }
         },
-        Key::LShift => {
+        Key::LShift => {                // shifting screen
             _model.scrn_mov = false;
-        },
-        Key::M => {
-            _model.obj_mov = false;
         },
         Key::Delete => {
             let mut remove_stack: Vec<usize> = Vec::new();
@@ -58,13 +63,6 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
         Key::Escape => {
             (_model.wctrl.exit_func)(_app);
         }
-        Key::P => {
-            _model.plot_config.draw_grid = !_model.plot_config.draw_grid;
-        },
-        Key::H => {
-            _model.wtrans.rot = 0.;
-            _model.wtrans.t = pt2(0., 0.);
-        },
         _ => {},
     }
 }
