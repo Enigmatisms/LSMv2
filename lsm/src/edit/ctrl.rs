@@ -1,6 +1,8 @@
 use nannou::prelude::*;
 use super::model::Model;
+use super::mesh::Chain;
 use crate::utils::utils;
+use crate::utils::plot;
 
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
@@ -20,6 +22,13 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
 pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
         // _model.scrn and _model.obj are mutex to be true
+        Key::Return => {
+            // 如果当前map_points最后一个Vec点数大于2，则可以push新的Vec（相当于保存了）
+            let last_vec = _model.map_points.last().unwrap();
+            if last_vec.len() > 2 {
+                _model.map_points.push(Chain::new());
+            }
+        },
         Key::LShift => {
             _model.scrn_mov = false;
         },
@@ -41,6 +50,20 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
                     break;
                 }
             }
+            if _model.map_points.is_empty() {
+                _model.map_points.push(Chain::new());
+            }
+            _model.select.selected.clear();
+        },
+        Key::Escape => {
+            (_model.wctrl.exit_func)(_app);
+        }
+        Key::P => {
+            _model.plot_config.draw_grid = !_model.plot_config.draw_grid;
+        },
+        Key::H => {
+            _model.wtrans.rot = 0.;
+            _model.wtrans.t = pt2(0., 0.);
         },
         _ => {},
     }
@@ -67,40 +90,69 @@ pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
             _model.mouse_moving_object = true;
         }
     } else {
-
+        if _model.select.selected.is_empty() == false {
+            _model.select.selected.clear();
+            return;
+        }
+        match _button {
+            MouseButton::Left => {
+                // 增加新的点
+                let last_vec = _model.map_points.last_mut().unwrap();
+                last_vec.push(plot::localized_position(&point, &_model.wtrans));
+            },
+            MouseButton::Right => {
+                _model.select.key_pressed = true;
+                _model.select.bl = plot::localized_position(&point, &_model.wtrans);
+                _model.select.tr = _model.select.bl;
+            },
+            _ => {}
+        }
     }
 }
 
 // mouse release will determine the initial angle
 pub fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
     let now_pos = _app.mouse.position();
-    if _model.scrn_mov == false {
+    if _model.scrn_mov == true {                    // 画幅移动---视角变换模式
         match _button {
-            MouseButton::Left => {},
-            _ => {},
+            MouseButton::Middle => {
+                _model.wtrans.t += now_pos - _model.wtrans.t_start;
+                _model.wtrans.t_set = true;
+            },
+            MouseButton::Left => {
+                let delta_angle = utils::good_angle(now_pos.y.atan2(now_pos.x) - _model.wtrans.rot_start);
+                _model.wtrans.rot = utils::good_angle(delta_angle + _model.wtrans.rot);
+                _model.wtrans.r_set = true;
+                _model.wtrans.t = utils::get_rotation(&delta_angle).mul_vec2(_model.wtrans.t);
+            },
+            MouseButton::Right => {
+                _model.wtrans.t = pt2(0., 0.);
+                _model.wtrans.rot = 0.;
+            },
+            _ => {}
+        }
+    } else if _model.obj_mov == true {              // 选中物体移动模式
+        if _button == MouseButton::Left {
+            _model.mouse_moving_object = false;
         }
     } else {
-        if _model.scrn_mov == true {
-            match _button {
-                MouseButton::Middle => {
-                    _model.wtrans.t += now_pos - _model.wtrans.t_start;
-                    _model.wtrans.t_set = true;
-                },
-                MouseButton::Left => {
-                    let delta_angle = utils::good_angle(now_pos.y.atan2(now_pos.x) - _model.wtrans.rot_start);
-                    _model.wtrans.rot = utils::good_angle(delta_angle + _model.wtrans.rot);
-                    _model.wtrans.r_set = true;
-                    _model.wtrans.t = utils::get_rotation(&delta_angle).mul_vec2(_model.wtrans.t);
-                },
-                MouseButton::Right => {
-                    _model.wtrans.t = pt2(0., 0.);
-                    _model.wtrans.rot = 0.;
-                },
-                _ => {}
-            }
-        } else if _model.obj_mov == true {
-            if _button == MouseButton::Left {
-                _model.mouse_moving_object = false;
+        if _model.select.key_pressed == true {      // 框选完成，计算选框以及所有被选中点
+            calc_select_box(&now_pos, _model);
+            _model.select.key_pressed = false;
+            // push all the related points to _model.select
+            for (chain_id, chain) in _model.map_points.iter().enumerate() {
+                if chain.intersect(&_model.select.bl, &_model.select.tr) == true {
+                    let mut select_ids: Vec<usize> = Vec::new();
+                    select_ids.push(chain_id);
+                    for (pt_id, pt) in chain.points.iter().enumerate() {
+                        if point_in_box(pt, &_model.select.bl, &_model.select.tr) {
+                            select_ids.push(pt_id);
+                        }
+                    }
+                    if select_ids.len() > 1 {
+                        _model.select.selected.push(select_ids);
+                    }
+                }
             }
         }
     }
@@ -127,6 +179,11 @@ pub fn mouse_moved(_app: &App, _model: &mut Model, _pos: Point2) {
             let mesh_id = *pts.first().unwrap();
             _model.map_points[mesh_id].translate(&delta_t, &pts[1..]);
         }
+        _model.wtrans.t_start = point;
+    } else {
+        if _model.select.key_pressed == true {
+            _model.select.tr = plot::localized_position(&point, &_model.wtrans);
+        }
     }
 }
 
@@ -140,4 +197,17 @@ pub fn mouse_wheel(_app: &App, _model: &mut Model, _dt: MouseScrollDelta, _phase
             println!("Mouse scroll data returned type: PixelDelta, which is not implemented.");
         }
     }
+}
+
+fn calc_select_box(point: &Point2, model: &mut Model) {
+    let screen_pos = plot::localized_position(point, &model.wtrans);
+    let tmp_bl = screen_pos.min(model.select.bl);
+    let tmp_tr = screen_pos.max(model.select.bl);
+    model.select.bl = tmp_bl;
+    model.select.tr = tmp_tr;
+}
+
+#[inline(always)]
+fn point_in_box(pt: &Point2, bl: &Point2, tr: &Point2) -> bool {
+    (pt.x > bl.x) && (pt.y > bl.y) && (pt.x < tr.x) && (pt.y < tr.y)
 }

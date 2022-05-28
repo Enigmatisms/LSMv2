@@ -6,8 +6,9 @@ use crate::utils::structs::{PlotConfig, WindowCtrl, WindowTransform};
 
 pub struct Selection {
     pub selected: Vec<Vec<usize>>,
-    pub tl: Point2,
-    pub br: Point2
+    pub bl: Point2,
+    pub tr: Point2,
+    pub key_pressed: bool
 }
 
 // TODO: 个人希望，此处存储点使用链表，则结果的存储使用链表的链表
@@ -25,10 +26,11 @@ pub struct Model {
 impl Model {
     pub fn new(window_id:  WindowId, config: &map_io::Config) -> Model {
         Model {
-            map_points: Vec::new(), 
+            map_points: vec![Chain::new()], 
             select: Selection {
                 selected: Vec::new(),
-                tl: pt2(0., 0.), br: pt2(0., 0.)
+                bl: pt2(0., 0.), tr: pt2(0., 0.),
+                key_pressed: false
             },
             plot_config: PlotConfig {
                 draw_grid: false, grid_step: 100.0,
@@ -36,7 +38,7 @@ impl Model {
             wctrl: WindowCtrl {
                 window_id: window_id,
                 win_w: config.screen.width as f32, win_h: config.screen.height as f32,
-                exit_func: placeholder,
+                exit_func: exit,
             },
             wtrans: WindowTransform {
                 t: pt2(0.0, 0.0), t_start: pt2(0.0, 0.0),
@@ -49,4 +51,7 @@ impl Model {
     }
 }
 
-fn placeholder(_app: &App) {}
+fn exit(app: &App) {
+    // TODO: 保存
+    app.quit();
+}

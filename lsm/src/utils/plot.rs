@@ -35,9 +35,14 @@ pub fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
 }
 
 pub fn local_mouse_position(_app: &App, wint: &WindowTransform) -> Point2 {
-    let mut mouse = _app.mouse.position();
-    mouse -= wint.t;
+    let mouse = _app.mouse.position();
+    localized_position(&mouse, wint)
+}
+
+#[inline(always)]
+pub fn localized_position(pt: &Point2, wint: &WindowTransform) -> Point2 {
+    let mut res = *pt - wint.t;
     let rotation_inv= utils::get_rotation(&-wint.rot);
-    mouse = rotation_inv.mul_vec2(mouse);
-    mouse / wint.scale
+    res = rotation_inv.mul_vec2(res);
+    res / wint.scale
 }

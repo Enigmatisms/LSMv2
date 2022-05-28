@@ -2,17 +2,17 @@ use nannou::prelude::*;
 
 pub struct Chain {
     pub points: Vec<Point2>,
-    pub tl: Point2,
-    pub br: Point2
+    pub bl: Point2,
+    pub tr: Point2
 }
 
 impl Chain {
     pub fn new() -> Chain {
-        Chain {points: Vec::new(), tl: pt2(1e6, 1e6), br: pt2(-1e6, -1e6)}
+        Chain {points: Vec::new(), bl: pt2(1e6, 1e6), tr: pt2(-1e6, -1e6)}
     }
 
-    pub fn intersect(&self, stl: &Point2, sbr: &Point2) -> bool {
-        !((sbr.x <= self.tl.x) || (sbr.y <= self.tl.y) || (stl.x >= self.br.x) || (stl.y >= self.br.y))
+    pub fn intersect(&self, s_bl: &Point2, s_tr: &Point2) -> bool {
+        !((s_tr.x <= self.bl.x) || (s_tr.y <= self.bl.y) || (s_bl.x >= self.tr.x) || (s_bl.y >= self.tr.y))
     }
 
     pub fn push(&mut self, new_p: Point2) {
@@ -24,11 +24,11 @@ impl Chain {
         for id in rm.iter().rev() {
             self.points.remove(*id);
         }
-        if self.points.is_empty() {
+        if self.points.len() < 3 {
             return false;
         }
-        self.tl = pt2(1e6, 1e6);
-        self.br = pt2(-1e6, -1e6);
+        self.bl = pt2(1e6, 1e6);
+        self.tr = pt2(-1e6, -1e6);
         for i in 0..self.points.len() {
             self.update_bounds(self.points[i]);
         }
@@ -39,8 +39,8 @@ impl Chain {
         for id in ids.iter() {
             self.points[*id] += *t;
         }
-        self.tl += *t;
-        self.br += *t;
+        self.bl += *t;
+        self.tr += *t;
     }
 
     pub fn copy(&mut self, ids: &[usize]) -> Chain {
@@ -52,19 +52,14 @@ impl Chain {
     }
 
     #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.points.len()
+    }
+
+    #[inline(always)]
     fn update_bounds(&mut self, new_p: Point2) {
-        if new_p.x < self.tl.x {
-            self.tl.x = new_p.x;
-        }
-        if new_p.x > self.br.x {
-            self.br.x = new_p.x;
-        }
-        if new_p.y < self.tl.y {
-            self.tl.y = new_p.y;
-        }
-        if new_p.y > self.br.y {
-            self.br.y = new_p.y;
-        }
+        self.bl = new_p.min(self.bl);
+        self.tr = new_p.max(self.tr);
     }
 }
 
