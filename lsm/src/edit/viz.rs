@@ -24,8 +24,7 @@ pub fn model(app: &App) -> Model {
         .unwrap();
 
     app.set_exit_on_escape(false);
-    let meshes: map_io::Meshes = map_io::parse_map_file(config.map_path.as_str()).unwrap();
-    Model::new(window_id, &config, meshes)
+    Model::new(window_id, &config)
 }
 
 pub fn update(_app: &App, _model: &mut Model, _: Update) {
@@ -44,14 +43,14 @@ pub fn view(app: &App, model: &Model, frame: Frame) {
     }
 
     draw.background().color(BLACK);
-    for mesh in model.map_points.iter() {
-        let points = (0..mesh.len()).map(|i| {
-            mesh[i]
-        });
-        draw.polygon()
-            .color(WHITE)
-            .points(points);
-    }
+    // for mesh in model.map_points.iter() {
+    //     let points = (0..mesh.len()).map(|i| {
+    //         mesh[i]
+    //     });
+    //     draw.polygon()
+    //         .color(WHITE)
+    //         .points(points);
+    // }
 
     draw.to_frame(app, &frame).unwrap();
 }

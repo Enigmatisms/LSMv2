@@ -5,9 +5,9 @@ use super::ctrl;
 use super::model::Model;
 use super::grid::collision_detection;
 
+use crate::utils::plot;
 use crate::utils::utils;
 use crate::utils::map_io;
-use crate::utils::plot;
 
 pub fn model(app: &App) -> Model {
     let config: map_io::Config = map_io::read_config("../config/simulator_config.json");
