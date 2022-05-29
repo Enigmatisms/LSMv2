@@ -2,7 +2,7 @@ use nannou::prelude::*;
 use super::mesh::Chain;
 
 use crate::utils::map_io;
-use crate::utils::structs::{PlotConfig, WindowCtrl, WindowTransform};
+use crate::utils::structs::{PlotConfig, WindowCtrl, WindowTransform, KeyStatus};
 use nannou_egui::{Egui, egui::Rect};
 
 pub struct Selection {
@@ -19,6 +19,7 @@ pub struct Model {
     pub plot_config: PlotConfig,
     pub wctrl: WindowCtrl,
     pub wtrans: WindowTransform,
+    pub key_stat: KeyStatus,
     pub egui: Egui,
     pub egui_rect: Rect,
     pub saved_file_name: String,
@@ -50,6 +51,7 @@ impl Model {
                 t: pt2(0.0, 0.0), t_start: pt2(0.0, 0.0),
                 rot: 0., rot_start: 0., t_set: true, r_set: true, scale: 1.0,
             },
+            key_stat: KeyStatus{ctrl_pressed: false},
             egui: egui,
             egui_rect: Rect::from_x_y_ranges(0.0..=1.0, 0.0..=1.0),
             saved_file_name: String::from(""),
@@ -61,7 +63,6 @@ impl Model {
 
     #[inline(always)]
     pub fn cursor_in_gui(&self, w_h: &(f32, f32), pt: &Point2) -> bool {
-        // let local_pt = pt2(pt.x, -pt.y) + 
         let local_pt = pt2(pt.x + 0.5 * w_h.0, 0.5 * w_h.1 - pt.y);
         (local_pt.x > self.egui_rect.left()) && (local_pt.y + 30. > self.egui_rect.top()) && (local_pt.x < self.egui_rect.right()) && (local_pt.y - 180. < self.egui_rect.top())
     }

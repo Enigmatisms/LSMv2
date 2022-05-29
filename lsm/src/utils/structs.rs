@@ -22,3 +22,7 @@ pub struct PlotConfig {
     pub grid_step: f32,
     pub grid_alpha: f32
 }
+
+pub struct KeyStatus {
+    pub ctrl_pressed: bool,
+}

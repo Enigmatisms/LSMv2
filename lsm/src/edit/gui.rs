@@ -1,10 +1,9 @@
 use nannou::prelude::*;
 use nannou_egui::{self, egui};
-use std::io::Write;
 
 use super::model::Model;
-use super::mesh::Chain;
 use super::ctrl::clear_offset;
+use crate::utils::map_io::save_to_file;
 
 pub fn update_gui(model: &mut Model, update: &Update) {
     let Model {
@@ -78,36 +77,6 @@ pub fn update_gui(model: &mut Model, update: &Update) {
             });
         });
     });
-}
-
-fn save_to_file(map_points: &Vec<Chain>, file_name: &String) -> String {
-    let mut _path_res= String::new();
-    if file_name.len() == 0 {
-        let path = rfd::FileDialog::new()
-            .set_file_name("../maps/new_map.txt")
-            .set_directory(".")
-            .save_file();
-        if let Some(file) = path {
-            _path_res = String::from(file.as_os_str().to_str().unwrap());
-        } else {
-            println!("Failed to open file.");
-            return String::new();
-        }
-    } else {
-        _path_res = file_name.clone();
-    }
-    let mut file = std::fs::File::create(_path_res.as_str()).expect("Failed to create file.");
-    for chain in map_points.iter() {
-        if chain.len() <= 2 {
-            continue;
-        }
-        write!(file, "{} ", chain.len()).expect("Failed to write to file.");
-        for pt in chain.points.iter() {
-            write!(file, "{} {} ", pt.x, pt.y).expect("Failed to write to file.");
-        }
-        write!(file, "\n").expect("Failed to write to file.");
-    }
-    return _path_res;
 }
 
 fn update_status(scrn_mov: &mut bool, obj_mov: &mut bool) {

@@ -3,6 +3,7 @@ use super::model::Model;
 use super::mesh::Chain;
 use crate::utils::utils;
 use crate::utils::plot;
+use crate::utils::map_io::save_to_file;
 use crate::utils::structs::WindowTransform;
 
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
@@ -16,6 +17,14 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
             _model.obj_mov = true;
             _model.scrn_mov = false;
         },
+        Key::LControl => {
+            _model.key_stat.ctrl_pressed = true;
+        },
+        Key::S => {
+            if _model.key_stat.ctrl_pressed == true {
+                _model.saved_file_name = save_to_file(&_model.map_points, &_model.saved_file_name);
+            }
+        }
         _ => {},
     }
 }
@@ -62,6 +71,9 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
         },
         Key::Escape => {
             (_model.wctrl.exit_func)(_app);
+        }
+        Key::LControl => {
+            _model.key_stat.ctrl_pressed = false;
         }
         _ => {},
     }
