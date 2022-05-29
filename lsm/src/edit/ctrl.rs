@@ -3,6 +3,7 @@ use super::model::Model;
 use super::mesh::Chain;
 use crate::utils::utils;
 use crate::utils::plot;
+use crate::utils::structs::WindowTransform;
 
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
@@ -28,8 +29,7 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
             _model.plot_config.draw_grid = !_model.plot_config.draw_grid;
         },
         Key::H => {                     // Set screen offsets to zero
-            _model.wtrans.rot = 0.;
-            _model.wtrans.t = pt2(0., 0.);
+            clear_offset(&mut _model.wtrans);
         },
         Key::Return => {                // push valid point vector
             let last_vec = _model.map_points.last().unwrap();
@@ -70,6 +70,9 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
 // initial position selection
 pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
     let point = _app.mouse.position();
+    if _model.cursor_in_gui(&_app.main_window().rect().w_h(), &point) {
+        return;
+    }
     if _model.scrn_mov == true {
         match _button {
             MouseButton::Middle => {
@@ -114,14 +117,14 @@ pub fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
     if _model.scrn_mov == true {                    // 画幅移动---视角变换模式
         match _button {
             MouseButton::Middle => {
-                _model.wtrans.t += now_pos - _model.wtrans.t_start;
+                // _model.wtrans.t += now_pos - _model.wtrans.t_start;
                 _model.wtrans.t_set = true;
             },
             MouseButton::Left => {
-                let delta_angle = utils::good_angle(now_pos.y.atan2(now_pos.x) - _model.wtrans.rot_start);
-                _model.wtrans.rot = utils::good_angle(delta_angle + _model.wtrans.rot);
+                // let delta_angle = utils::good_angle(now_pos.y.atan2(now_pos.x) - _model.wtrans.rot_start);
+                // _model.wtrans.rot = utils::good_angle(delta_angle + _model.wtrans.rot);
+                // _model.wtrans.t = utils::get_rotation(&delta_angle).mul_vec2(_model.wtrans.t);
                 _model.wtrans.r_set = true;
-                _model.wtrans.t = utils::get_rotation(&delta_angle).mul_vec2(_model.wtrans.t);
             },
             MouseButton::Right => {
                 _model.wtrans.t = pt2(0., 0.);
@@ -195,6 +198,11 @@ pub fn mouse_wheel(_app: &App, _model: &mut Model, _dt: MouseScrollDelta, _phase
             println!("Mouse scroll data returned type: PixelDelta, which is not implemented.");
         }
     }
+}
+
+pub fn clear_offset(wtrans: &mut WindowTransform) {
+    wtrans.rot = 0.;
+    wtrans.t = pt2(0., 0.);
 }
 
 fn calc_select_box(point: &Point2, model: &mut Model) {

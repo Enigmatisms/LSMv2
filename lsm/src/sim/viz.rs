@@ -74,15 +74,15 @@ pub fn update(_app: &App, _model: &mut Model, _: Update) {
     }
 }
 
-pub fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {}
+fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {}
 
-pub fn view(app: &App, model: &Model, frame: Frame) {
+fn view(app: &App, model: &Model, frame: Frame) {
     let draw = plot::window_transform(app.draw(), &model.wtrans);
 
     if model.plot_config.draw_grid == true {
         let win = app.main_window().rect();
-        plot::draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, 0.01);
-        plot::draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, 0.01);
+        plot::draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, model.plot_config.grid_alpha);
+        plot::draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, model.plot_config.grid_alpha);
     }
 
     draw.background().color(BLACK);

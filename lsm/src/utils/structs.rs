@@ -20,4 +20,5 @@ pub struct WindowTransform {
 pub struct PlotConfig {
     pub draw_grid: bool,
     pub grid_step: f32,
+    pub grid_alpha: f32
 }

@@ -38,9 +38,9 @@ impl Chain {
     pub fn translate(&mut self, t: &Point2, ids: &[usize]) {
         for id in ids.iter() {
             self.points[*id] += *t;
+            self.bl = self.bl.min(self.points[*id]);
+            self.tr = self.tr.max(self.points[*id]);
         }
-        self.bl += *t;
-        self.tr += *t;
     }
 
     pub fn copy(&mut self, ids: &[usize]) -> Chain {

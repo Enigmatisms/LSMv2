@@ -36,7 +36,7 @@ impl Model {
             occ_grid: occ_grid,
             grid_specs: grid_specs,
             plot_config: PlotConfig {
-                draw_grid: false, grid_step: 100.0,
+                draw_grid: false, grid_step: 100.0, grid_alpha: 0.01
             },
             wctrl: WindowCtrl {
                 window_id: window_id,
