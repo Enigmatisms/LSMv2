@@ -2,7 +2,6 @@ use nannou::prelude::*;
 use nannou_egui::{self, egui};
 use std::io::Write;
 
-use std::fs;
 use super::model::Model;
 use super::mesh::Chain;
 use super::ctrl::clear_offset;
@@ -10,6 +9,7 @@ use super::ctrl::clear_offset;
 pub fn update_gui(model: &mut Model, update: &Update) {
     let Model {
         ref map_points,
+        ref mut saved_file_name,
         ref mut plot_config,
         ref mut wtrans,
         ref mut egui,
@@ -52,47 +52,62 @@ pub fn update_gui(model: &mut Model, update: &Update) {
             ui.add(egui::Slider::new(&mut wtrans.scale, 0.5..=2.0));
             ui.end_row();
             
+            if changed == true {
+                update_status(scrn_mov, obj_mov);
+            }
+        });
+        egui::Grid::new("my_grid")
+            .num_columns(3)
+            .spacing([17.0, 5.0])
+            .striped(true)
+        .show(ui, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Centering").clicked() {
                     clear_offset(wtrans);
                 }
             }); 
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Save to file").clicked() {
-                    save_to_file(map_points);
+                if ui.button("Save map").clicked() {
+                    *saved_file_name = save_to_file(map_points, saved_file_name);
                 }
             });
-            ui.end_row();
-            
-            if changed == true {
-                update_status(scrn_mov, obj_mov);
-            }
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                if ui.button("Save as").clicked() {
+                    save_to_file(map_points, &String::from(""));
+                }
+            });
         });
     });
 }
 
-fn save_to_file(map_points: &Vec<Chain>) {
-    let path = rfd::FileDialog::new()
-        .set_file_name("../maps/new_map.txt")
-        .set_directory(".")
-        .save_file();
-        
-    if let Some(file) = path {
-        let path_res = file.as_os_str().to_str().take().unwrap();
-        let mut file = std::fs::File::create(path_res).expect("Failed to create file.");
-        for chain in map_points.iter() {
-            if chain.len() <= 2 {
-                continue;
-            }
-            write!(file, "{} ", chain.len()).expect("Failed to write to file.");
-            for pt in chain.points.iter() {
-                write!(file, "{} {} ", pt.x, pt.y).expect("Failed to write to file.");
-            }
-            write!(file, "\n").expect("Failed to write to file.");
+fn save_to_file(map_points: &Vec<Chain>, file_name: &String) -> String {
+    let mut _path_res= String::new();
+    if file_name.len() == 0 {
+        let path = rfd::FileDialog::new()
+            .set_file_name("../maps/new_map.txt")
+            .set_directory(".")
+            .save_file();
+        if let Some(file) = path {
+            _path_res = String::from(file.as_os_str().to_str().unwrap());
+        } else {
+            println!("Failed to open file.");
+            return String::new();
         }
     } else {
-        println!("Failed to open file.");
+        _path_res = file_name.clone();
     }
+    let mut file = std::fs::File::create(_path_res.as_str()).expect("Failed to create file.");
+    for chain in map_points.iter() {
+        if chain.len() <= 2 {
+            continue;
+        }
+        write!(file, "{} ", chain.len()).expect("Failed to write to file.");
+        for pt in chain.points.iter() {
+            write!(file, "{} {} ", pt.x, pt.y).expect("Failed to write to file.");
+        }
+        write!(file, "\n").expect("Failed to write to file.");
+    }
+    return _path_res;
 }
 
 fn update_status(scrn_mov: &mut bool, obj_mov: &mut bool) {

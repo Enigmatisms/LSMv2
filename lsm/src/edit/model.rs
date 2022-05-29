@@ -21,6 +21,7 @@ pub struct Model {
     pub wtrans: WindowTransform,
     pub egui: Egui,
     pub egui_rect: Rect,
+    pub saved_file_name: String,
     pub scrn_mov: bool,
     pub obj_mov: bool,
     pub mouse_moving_object: bool
@@ -51,6 +52,7 @@ impl Model {
             },
             egui: egui,
             egui_rect: Rect::from_x_y_ranges(0.0..=1.0, 0.0..=1.0),
+            saved_file_name: String::from(""),
             scrn_mov: false,
             obj_mov: false,
             mouse_moving_object: false
