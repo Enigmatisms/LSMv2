@@ -120,7 +120,12 @@ pub fn save_to_file(map_points: &Vec<Chain>, file_name: &String) -> String {
         _path_res = file_name.clone();
     }
     let mut file = std::fs::File::create(_path_res.as_str()).expect("Failed to create file.");
-    for chain in map_points.iter() {
+    if map_points.len() <= 1 {
+        return _path_res;
+    }
+    let map_size = map_points.len() - 1;
+    for i in 0..map_size {          // the last one (not completed) will not be stored
+        let chain = &map_points[i];
         if chain.len() <= 2 {
             continue;
         }

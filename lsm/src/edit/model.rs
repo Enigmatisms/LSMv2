@@ -1,4 +1,5 @@
 use nannou::prelude::*;
+use std::time::Instant;
 use super::mesh::Chain;
 
 use crate::utils::map_io;
@@ -10,6 +11,34 @@ pub struct Selection {
     pub bl: Point2,
     pub tr: Point2,
     pub key_pressed: bool
+}
+
+pub struct TimerEvent {
+    saved_time: Instant,
+    recent_saved: bool
+}
+
+impl TimerEvent {
+    #[inline(always)]
+    pub fn time_elapsed(&self) -> f32 {
+        self.saved_time.elapsed().as_secs_f32()
+    }
+
+    #[inline(always)]
+    pub fn reset_time(&mut self){
+        self.recent_saved = true;
+        self.saved_time = Instant::now();
+    }
+
+    #[inline(always)]
+    pub fn is_recent_saved(&self) -> bool {
+        self.recent_saved
+    }
+    
+    #[inline(always)]
+    pub fn save_expire(&mut self) {
+        self.recent_saved = false;
+    }
 }
 
 // TODO: 个人希望，此处存储点使用链表，则结果的存储使用链表的链表
@@ -25,7 +54,8 @@ pub struct Model {
     pub saved_file_name: String,
     pub scrn_mov: bool,
     pub obj_mov: bool,
-    pub mouse_moving_object: bool
+    pub mouse_moving_object: bool,
+    pub timer_event: TimerEvent
 }
 
 impl Model {
@@ -57,7 +87,8 @@ impl Model {
             saved_file_name: String::from(""),
             scrn_mov: false,
             obj_mov: false,
-            mouse_moving_object: false
+            mouse_moving_object: false,
+            timer_event: TimerEvent {saved_time: Instant::now(), recent_saved: false}
         }
     }
 

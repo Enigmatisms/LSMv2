@@ -5,6 +5,9 @@ use super::model::Model;
 use super::ctrl::clear_offset;
 use crate::utils::map_io::save_to_file;
 
+static SAVED_STRING: &str = ">>> Map file saved <<<";
+static NONE_STRING: &str = "...";
+
 pub fn update_gui(model: &mut Model, update: &Update) {
     let Model {
         ref map_points,
@@ -15,6 +18,7 @@ pub fn update_gui(model: &mut Model, update: &Update) {
         ref mut scrn_mov,
         ref mut obj_mov,
         ref mut egui_rect,
+        ref mut timer_event,
         ..
     } = *model;
     egui.set_elapsed_time(update.since_start);
@@ -68,13 +72,22 @@ pub fn update_gui(model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Save map").clicked() {
                     *saved_file_name = save_to_file(map_points, saved_file_name);
+                    timer_event.reset_time();
                 }
             });
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Save as").clicked() {
-                    save_to_file(map_points, &String::from(""));
+                    *saved_file_name = save_to_file(map_points, &String::from(""));
+                    timer_event.reset_time();
                 }
             });
+        });
+        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+            if timer_event.is_recent_saved() == true {
+                ui.label(SAVED_STRING);
+            } else {
+                ui.label(NONE_STRING);
+            }
         });
     });
 }

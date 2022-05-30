@@ -23,6 +23,7 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
         Key::S => {
             if _model.key_stat.ctrl_pressed == true {
                 _model.saved_file_name = save_to_file(&_model.map_points, &_model.saved_file_name);
+                _model.timer_event.reset_time();
             }
         }
         _ => {},

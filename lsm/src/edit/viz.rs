@@ -38,6 +38,11 @@ pub fn model(app: &App) -> Model {
 
 pub fn update(_app: &App, _model: &mut Model, _update: Update) {
     gui::update_gui(_model, &_update);
+    if _model.timer_event.is_recent_saved() == true {
+        if _model.timer_event.time_elapsed() > 3. {
+            _model.timer_event.save_expire();
+        }
+    }
 }
 
 fn raw_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
