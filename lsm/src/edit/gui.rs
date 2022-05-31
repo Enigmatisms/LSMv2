@@ -23,6 +23,8 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
         ref mut obj_mov,
         ref mut egui_rect,
         ref mut timer_event,
+        ref mut color,
+        ref mut key_stat,
         ..
     } = *model;
     egui.set_elapsed_time(update.since_start);
@@ -31,28 +33,45 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
     let window = window.open(&mut wctrl.gui_visible);
     window.show(&ctx, |ui| {
         *egui_rect = ui.clip_rect();
-        egui::Grid::new("my_grid")
-            .num_columns(2)
-            .spacing([25.0, 5.0])
+        egui::Grid::new("switch_grid")
+            .num_columns(4)
+            .spacing([12.0, 5.0])
             .striped(true)
         .show(ui, |ui| {
-            let mut changed = false;
+            let mut activity_changed = false;
             ui.label("Move screen");
-            changed |= ui.add(toggle(scrn_mov)).changed();
-            ui.end_row();
+            activity_changed |= ui.add(toggle(scrn_mov)).changed();
             
             ui.label("Move point");
-            changed |= ui.add(toggle(obj_mov)).changed();
+            activity_changed |= ui.add(toggle(obj_mov)).changed();
             ui.end_row();
 
             ui.label("Draw grid");
             ui.add(toggle(&mut plot_config.draw_grid));
-            ui.end_row();
 
             ui.label("Show trajectory");
             ui.add(toggle(&mut trajectory.is_visible));
             ui.end_row();
 
+            ui.label("Night mode");
+            if ui.add(toggle(&mut color.night_mode)).changed() {
+                color.switch_mode();
+            }
+
+            ui.label("Ctrl pressed");
+            ui.add(toggle(&mut key_stat.ctrl_pressed));
+            ui.end_row();
+
+            if activity_changed == true {
+                update_status(scrn_mov, obj_mov);
+            }
+        });
+
+        egui::Grid::new("slide_bars")
+            .num_columns(2)
+            .spacing([24.0, 5.0])
+            .striped(true)
+        .show(ui, |ui| {
             ui.label("Grid size");
             ui.add(egui::Slider::new(&mut plot_config.grid_step, 20.0..=200.0));
             ui.end_row();
@@ -69,20 +88,25 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.add(egui::Slider::new(&mut trajectory.alpha, 0.001..=1.0));
             ui.end_row();
             
-            if changed == true {
-                update_status(scrn_mov, obj_mov);
-            }
-        });
-        egui::Grid::new("my_grid")
-            .num_columns(3)
-            .spacing([17.0, 5.0])
-            .striped(true)
-        .show(ui, |ui| {
+            
+        // });
+        // egui::Grid::new("buttons")
+        //     .num_columns(2)
+        //     .spacing([24.0, 5.0])
+        // .show(ui, |ui| {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Centering").clicked() {
                     clear_offset(wtrans);
                 }
             }); 
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                if ui.button("Take screenshot").clicked() {
+                    take_snapshot(&app.main_window());
+                    timer_event.reset_time(SNAPSHOT_STRING);
+                }
+            });
+            ui.end_row();
+            
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Save map").clicked() {
                     *saved_file_name = save_to_file(map_points, saved_file_name);
@@ -90,19 +114,13 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
                 }
             });
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Save as").clicked() {
+                if ui.button("Save as...").clicked() {
                     *saved_file_name = save_to_file(map_points, &String::from(""));
                     timer_event.reset_time(SAVED_STRING);
                 }
             });
             ui.end_row();
 
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Snapshot").clicked() {
-                    take_snapshot(&app.main_window());
-                    timer_event.reset_time(SNAPSHOT_STRING);
-                }
-            }); 
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Load map").clicked() {
                     let mut raw_points: Vec<Vec<Point2>> = Vec::new();
@@ -111,7 +129,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
                 }
             });
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Load traj").clicked() {
+                if ui.button("Load trajectory").clicked() {
                     load_traj_file(&mut trajectory.traj);
                 }
             });

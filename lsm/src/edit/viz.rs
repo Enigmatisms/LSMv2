@@ -7,13 +7,6 @@ use super::mesh::screen_bounds;
 use crate::utils::map_io;
 use crate::utils::plot;
 
-static NAVY_BLUE: (f32, f32, f32, f32) = (0.301961, 0.298039, 0.490196, 0.8);
-static MILKY_WHITE: (f32, f32, f32, f32) = (0.913725, 0.835294, 0.792157, 0.9);
-static MY_GREY: (f32, f32, f32, f32) = (0.803922, 0.760784, 0.682353, 1.0);
-static LIGHT_BLUE: (f32, f32, f32, f32) = (0.600000, 0.768627, 0.784314, 0.8);
-static AQUATIC: (f32, f32, f32, f32) = (0.129412, 0.333333, 0.803922, 0.1);
-static GEN_RED: (f32, f32, f32, f32) = (1.000000, 0.094118, 0.094118, 1.0);
-
 pub fn model(app: &App) -> Model {
     let config: map_io::Config = map_io::read_config("../config/editor_config.json");
 
@@ -61,7 +54,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
         plot::draw_grid(&draw, &bounds, model.plot_config.grid_step / 5., 0.5, model.plot_config.grid_alpha);
     }
 
-    draw.background().color(BLACK);
+    draw.background().rgb(model.color.bg_color.0, model.color.bg_color.1, model.color.bg_color.2);
     plot_unfinished(&draw, model);
     plot_finished(&draw, model);
     draw_selected_points(&draw, model);
@@ -72,11 +65,14 @@ fn view(app: &App, model: &Model, frame: Frame) {
         draw.rect()
             .x_y(center.x, center.y)
             .w_h(half_diff.x, half_diff.y)
-            .rgba(AQUATIC.0, AQUATIC.1, AQUATIC.2, AQUATIC.3);
+            .rgba(model.color.select_box.0, model.color.select_box.1, model.color.select_box.2, model.color.select_box.3);
     }
 
     if model.trajectory.is_visible && (model.trajectory.traj.is_empty() == false) {
-        plot::plot_trajectory(&draw, &model.trajectory.traj, model.trajectory.alpha);
+        plot::plot_trajectory(&draw, &model.trajectory.traj, &model.color.traj_color, model.trajectory.alpha);
+    }
+    if model.key_stat.ctrl_pressed == true {
+        plot::draw_frame(app, &draw, &model.wtrans);
     }
 
     draw.to_frame(app, &frame).unwrap();
@@ -89,8 +85,8 @@ fn plot_unfinished(draw: &Draw,  model: &Model) {
     draw.polyline()
         .weight(2.0)
         .points(pt2draw)
-        .rgba(MILKY_WHITE.0, MILKY_WHITE.1, MILKY_WHITE.2, MILKY_WHITE.3);
-   plot::draw_points(draw, &pt_arr.points, &LIGHT_BLUE);
+        .rgba(model.color.line_color.0, model.color.line_color.1, model.color.line_color.2, model.color.line_color.3);
+   plot::draw_points(draw, &pt_arr.points, &model.color.unfinished_pt);
 }
 
 fn plot_finished(draw: &Draw,  model: &Model) {
@@ -100,8 +96,8 @@ fn plot_finished(draw: &Draw,  model: &Model) {
         let pt2draw = (0..pt_arr.len()).map(|i| {pt_arr.points[i]});
         draw.polygon()
             .points(pt2draw)
-            .rgba(MY_GREY.0, MY_GREY.1, MY_GREY.2, MY_GREY.3);
-        plot::draw_points(draw, &pt_arr.points, &NAVY_BLUE);
+            .rgba(model.color.shape_color.0, model.color.shape_color.1, model.color.shape_color.2, model.color.shape_color.3);
+        plot::draw_points(draw, &pt_arr.points, &model.color.finished_pt);
     }
 }
 
@@ -115,7 +111,7 @@ fn draw_selected_points(draw: &Draw, model: &Model) {
             draw.ellipse()
                 .w_h(8., 8.)
                 .x_y(pt.x, pt.y)
-                .rgba(GEN_RED.0, GEN_RED.1, GEN_RED.2, GEN_RED.3);
+                .rgba(model.color.selected_pt.0, model.color.selected_pt.1, model.color.selected_pt.2, model.color.selected_pt.3);
         }
     }
 }

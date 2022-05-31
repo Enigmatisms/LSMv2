@@ -5,6 +5,8 @@ use std::path::Path;
 use super::utils;
 use super::structs::WindowTransform;
 
+static SIGN_OFFSET: [(f32, f32); 4] = [(-1., 1.), (1., 1.), (1., -1.), (-1., -1.)];
+
 #[inline(always)]
 pub fn window_transform(draw: Draw, wint: &WindowTransform) -> Draw {
     draw
@@ -14,12 +16,12 @@ pub fn window_transform(draw: Draw, wint: &WindowTransform) -> Draw {
         .scale_y(wint.scale)
 }
 
-pub fn plot_trajectory(draw: &Draw, trajectory: &Vec<Point2>, alpha: f32) {
+pub fn plot_trajectory(draw: &Draw, trajectory: &Vec<Point2>, rgb: &(f32, f32, f32), alpha: f32) {
     let pt2draw = (0..trajectory.len()).map(|i| {trajectory[i]});
     draw.polyline()
         .weight(1.5)
         .points(pt2draw)
-        .rgba(0., 1., 0., alpha);
+        .rgba(rgb.0, rgb.1, rgb.2, alpha);
 }
 
 pub fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
@@ -51,6 +53,18 @@ pub fn draw_points(draw: &Draw, pts: &Vec<Point2>, rgba: &(f32, f32, f32, f32)) 
             .x_y(pt.x, pt.y)
             .rgba(rgba.0, rgba.1, rgba.2, rgba.3);
     }
+}
+
+pub fn draw_frame(app: &App, draw: &Draw, wint: &WindowTransform) {
+    let rect = app.main_window().rect();
+    let pts = (0..4).map(|i| {
+        let (sign_x, sign_y) = SIGN_OFFSET[i];
+        localized_position(&pt2(rect.w() / 2. * sign_x, rect.h() / 2. * sign_y), wint)
+    });
+    draw.polyline()
+        .weight(2.)
+        .rgb(0.5, 0.5, 0.5)
+        .points_closed(pts);
 }
 
 pub fn local_mouse_position(_app: &App, wint: &WindowTransform) -> Point2 {

@@ -1,10 +1,10 @@
 use nannou::prelude::*;
-use std::time::Instant;
 use nannou_egui::{Egui, egui::Rect};
 
 use super::mesh::Chain;
 use crate::utils::map_io;
-use crate::utils::structs::{PlotConfig, WindowCtrl, WindowTransform, KeyStatus, Trajectory};
+use crate::utils::color::EditorColor;
+use crate::utils::structs::*;
 
 pub struct Selection {
     pub selected: Vec<Vec<usize>>,
@@ -13,39 +13,13 @@ pub struct Selection {
     pub key_pressed: bool
 }
 
-pub struct TimerEvent {
-    to_display: String,
-    saved_time: Instant,
-    recent_saved: bool,
-}
-
-impl TimerEvent {
-    #[inline(always)]
-    pub fn time_elapsed(&self) -> f32 {
-        self.saved_time.elapsed().as_secs_f32()
-    }
-
-    #[inline(always)]
-    pub fn reset_time(&mut self, string: &str) {
-        self.recent_saved = true;
-        self.saved_time = Instant::now();
-        self.to_display = String::from(string);
-    }
-
-    #[inline(always)]
-    pub fn is_recent_saved(&self) -> bool {
-        self.recent_saved
-    }
-    
-    #[inline(always)]
-    pub fn save_expire(&mut self) {
-        self.recent_saved = false;
-        self.to_display = String::from("...");
-    }
-
-    #[inline(always)]
-    pub fn str_to_display(&self) -> &str {
-        self.to_display.as_str()
+impl Selection {
+    pub fn new() -> Selection {
+        Selection { 
+            selected: Vec::new(),
+            bl: pt2(0., 0.), tr: pt2(0., 0.),
+            key_pressed: false
+        }
     }
 }
 
@@ -58,6 +32,7 @@ pub struct Model {
     pub wtrans: WindowTransform,
     pub key_stat: KeyStatus,
     pub trajectory: Trajectory,
+    pub color: EditorColor,
     pub egui: Egui,
     pub egui_rect: Rect,
     pub saved_file_name: String,
@@ -73,28 +48,20 @@ impl Model {
         let egui = Egui::from_window(&window);
         Model {
             map_points: vec![Chain::new()], 
-            select: Selection {
-                selected: Vec::new(),
-                bl: pt2(0., 0.), tr: pt2(0., 0.),
-                key_pressed: false
-            },
-            plot_config: PlotConfig {
-                draw_grid: false, grid_step: 100.0, grid_alpha: 0.01
-            },
+            select: Selection::new(),
+            plot_config: PlotConfig::new(),
             wctrl: WindowCtrl::new(window_id, config.screen.width as f32, config.screen.height as f32, exit),
-            wtrans: WindowTransform {
-                t: pt2(0.0, 0.0), t_start: pt2(0.0, 0.0),
-                rot: 0., rot_start: 0., t_set: true, r_set: true, scale: 1.0,
-            },
+            wtrans: WindowTransform::new(),
             key_stat: KeyStatus{ctrl_pressed: false},
             trajectory: Trajectory::new(),
+            color: EditorColor::new(),
             egui: egui,
             egui_rect: Rect::from_x_y_ranges(0.0..=1.0, 0.0..=1.0),
             saved_file_name: String::from(""),
             scrn_mov: false,
             obj_mov: false,
             mouse_moving_object: false,
-            timer_event: TimerEvent {saved_time: Instant::now(), recent_saved: false, to_display: String::from("")}
+            timer_event: TimerEvent::new()
         }
     }
 
