@@ -37,7 +37,7 @@ pub fn model(app: &App) -> Model {
 }
 
 pub fn update(_app: &App, _model: &mut Model, _update: Update) {
-    gui::update_gui(_model, &_update);
+    gui::update_gui(_app, _model, &_update);
     if _model.timer_event.is_recent_saved() == true {
         if _model.timer_event.time_elapsed() > 3. {
             _model.timer_event.save_expire();
@@ -75,6 +75,10 @@ fn view(app: &App, model: &Model, frame: Frame) {
             .rgba(AQUATIC.0, AQUATIC.1, AQUATIC.2, AQUATIC.3);
     }
 
+    if model.trajectory.is_visible && (model.trajectory.traj.is_empty() == false) {
+        plot::plot_trajectory(&draw, &model.trajectory.traj, model.trajectory.alpha);
+    }
+
     draw.to_frame(app, &frame).unwrap();
     model.egui.draw_to_frame(&frame).unwrap();
 }
@@ -86,7 +90,7 @@ fn plot_unfinished(draw: &Draw,  model: &Model) {
         .weight(2.0)
         .points(pt2draw)
         .rgba(MILKY_WHITE.0, MILKY_WHITE.1, MILKY_WHITE.2, MILKY_WHITE.3);
-    draw_points(draw, &pt_arr.points, &LIGHT_BLUE);
+   plot::draw_points(draw, &pt_arr.points, &LIGHT_BLUE);
 }
 
 fn plot_finished(draw: &Draw,  model: &Model) {
@@ -97,16 +101,7 @@ fn plot_finished(draw: &Draw,  model: &Model) {
         draw.polygon()
             .points(pt2draw)
             .rgba(MY_GREY.0, MY_GREY.1, MY_GREY.2, MY_GREY.3);
-        draw_points(draw, &pt_arr.points, &NAVY_BLUE);
-    }
-}
-
-fn draw_points(draw: &Draw, pts: &Vec<Point2>, rgba: &(f32, f32, f32, f32)) {
-    for pt in pts.iter() {
-        draw.ellipse()
-            .w_h(5., 5.)
-            .x_y(pt.x, pt.y)
-            .rgba(rgba.0, rgba.1, rgba.2, rgba.3);
+        plot::draw_points(draw, &pt_arr.points, &NAVY_BLUE);
     }
 }
 

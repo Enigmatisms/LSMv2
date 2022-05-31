@@ -51,16 +51,30 @@ impl Chain {
         new_ch
     }
 
+    
     #[inline(always)]
     pub fn len(&self) -> usize {
         self.points.len()
     }
-
+    
     #[inline(always)]
     fn update_bounds(&mut self, new_p: Point2) {
         self.bl = new_p.min(self.bl);
         self.tr = new_p.max(self.tr);
     }
+}
+
+pub fn from_raw_points(raw_points:&Vec<Vec<Point2>>) -> Vec<Chain> {
+    let mut result: Vec<Chain> = Vec::new();
+    for mesh in raw_points.iter() {
+        let mut chain: Chain = Chain::new();
+        for pt in mesh.iter() {
+            chain.push(*pt);
+        }
+        result.push(chain);
+    }
+    result.push(Chain::new());
+    result
 }
 
 pub fn screen_bounds(meshes: &Vec<Chain>, win: &Rect,  grid_size: f32) -> Rect<f32>  {

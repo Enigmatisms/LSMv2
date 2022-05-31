@@ -23,9 +23,15 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
         Key::S => {
             if _model.key_stat.ctrl_pressed == true {
                 _model.saved_file_name = save_to_file(&_model.map_points, &_model.saved_file_name);
-                _model.timer_event.reset_time();
+                _model.timer_event.reset_time(">>> Map file saved <<<");
             }
         }
+        Key::P => {
+            if _model.key_stat.ctrl_pressed == true {
+                plot::take_snapshot(&_app.main_window());
+                _model.timer_event.reset_time(">>> Screenshot saved <<<");
+            }
+        },
         _ => {},
     }
 }
@@ -36,11 +42,16 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
             _model.obj_mov = false;
         },
         Key::P => {                     // switch grid drawing mode
-            _model.plot_config.draw_grid = !_model.plot_config.draw_grid;
+            if  _model.key_stat.ctrl_pressed == false {
+                _model.plot_config.draw_grid = !_model.plot_config.draw_grid;
+            } 
         },
         Key::H => {                     // Set screen offsets to zero
             clear_offset(&mut _model.wtrans);
         },
+        Key::V => {
+            _model.wctrl.switch_gui_visibility();
+        }
         Key::Return => {                // push valid point vector
             let last_vec = _model.map_points.last().unwrap();
             if last_vec.len() > 2 {
@@ -134,9 +145,6 @@ pub fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
                 _model.wtrans.t_set = true;
             },
             MouseButton::Left => {
-                // let delta_angle = utils::good_angle(now_pos.y.atan2(now_pos.x) - _model.wtrans.rot_start);
-                // _model.wtrans.rot = utils::good_angle(delta_angle + _model.wtrans.rot);
-                // _model.wtrans.t = utils::get_rotation(&delta_angle).mul_vec2(_model.wtrans.t);
                 _model.wtrans.r_set = true;
             },
             MouseButton::Right => {

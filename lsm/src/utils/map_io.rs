@@ -43,7 +43,8 @@ pub struct Config {
     pub grid_size: f32
 }
 
-pub fn parse_map_file(filepath: &str) -> Option<Meshes> {
+/// TODO: offset 600 and 450 needs to be removed
+pub fn parse_map_file<T>(filepath: T) -> Option<Meshes> where T: AsRef<std::path::Path> {
     if let Some(all_lines) = read_lines(filepath) {
         let mut result: Meshes = Vec::new();
         for line in all_lines.iter() {
@@ -138,8 +139,32 @@ pub fn save_to_file(map_points: &Vec<Chain>, file_name: &String) -> String {
     return _path_res;
 }
 
+pub fn load_traj_file(tral_points: &mut Vec<Point2>) {
+    let path = rfd::FileDialog::new()
+        .set_file_name("../maps/hfps0.lgp")
+        .set_directory(".")
+        .pick_file();
+    if let Some(path_res) = path {
+        *tral_points = parse_traj_file(path_res).unwrap();
+    } else {
+        tral_points.clear();
+    }
+}
+
+pub fn load_map_file(map_points: &mut Meshes) {
+    let path = rfd::FileDialog::new()
+        .set_file_name("../maps/standard0.lgp")
+        .set_directory(".")
+        .pick_file();
+    if let Some(path_res) = path {
+        *map_points = parse_map_file(path_res).unwrap();
+    } else {
+        map_points.clear();
+    }
+}
+
 // ========== privates ==========
-fn read_lines(filepath: &str) -> Option<Vec<String>> {
+fn read_lines<T>(filepath: T) -> Option<Vec<String>> where T: AsRef<std::path::Path> {
     if let Ok(file) = fs::File::open(filepath) {
         let reader = BufReader::new(file);
         let mut result_vec: Vec<String> = Vec::new();
@@ -153,4 +178,22 @@ fn read_lines(filepath: &str) -> Option<Vec<String>> {
         return Some(result_vec);
     }
     return None;
+}
+
+/// TODO: offset 600 and 450 needs to be removed
+fn parse_traj_file<T>(filepath: T) -> Option<Mesh> where T: AsRef<std::path::Path> {
+    if let Some(all_lines) = read_lines(filepath) {
+        let mut result: Mesh = Vec::new();
+        for i in 2..all_lines.len() {
+            let line = &all_lines[i];
+            let str_vec: Vec<&str> = line.split(" ").collect();
+            result.push(pt2(
+                str_vec[1].parse::<f32>().unwrap() - 600.,
+                str_vec[2].parse::<f32>().unwrap() - 450.
+            ));
+        }
+        return Some(result);
+    } else {
+        return None;
+    }
 }

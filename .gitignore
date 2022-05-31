@@ -3,5 +3,6 @@ devel/
 **/*.db*
 **/c_cpp_properties.json
 **/target
+**/screenshots/
 maps/
 tmp/

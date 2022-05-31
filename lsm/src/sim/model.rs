@@ -38,11 +38,7 @@ impl Model {
             plot_config: PlotConfig {
                 draw_grid: false, grid_step: 100.0, grid_alpha: 0.01
             },
-            wctrl: WindowCtrl {
-                window_id: window_id,
-                win_w: config.screen.width as f32, win_h: config.screen.height as f32,
-                exit_func: exit,
-            },
+            wctrl: WindowCtrl::new(window_id, config.screen.width as f32, config.screen.height as f32, exit),
             wtrans: WindowTransform {
                 t: pt2(0.0, 0.0), t_start: pt2(0.0, 0.0),
                 rot: 0., rot_start: 0., t_set: true, r_set: true, scale: 1.0,

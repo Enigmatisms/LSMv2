@@ -3,18 +3,22 @@ use nannou_egui::{self, egui};
 
 use super::model::Model;
 use super::ctrl::clear_offset;
-use crate::utils::map_io::save_to_file;
+use crate::utils::plot::take_snapshot;
+use super::mesh::from_raw_points;
+use crate::utils::map_io::{save_to_file, load_traj_file, load_map_file};
 
 static SAVED_STRING: &str = ">>> Map file saved <<<";
-static NONE_STRING: &str = "...";
+static SNAPSHOT_STRING: &str = ">>> Screenshot saved <<<";
 
-pub fn update_gui(model: &mut Model, update: &Update) {
+pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
     let Model {
-        ref map_points,
+        ref mut map_points,
+        ref mut wctrl,
         ref mut saved_file_name,
         ref mut plot_config,
         ref mut wtrans,
         ref mut egui,
+        ref mut trajectory,
         ref mut scrn_mov,
         ref mut obj_mov,
         ref mut egui_rect,
@@ -23,7 +27,9 @@ pub fn update_gui(model: &mut Model, update: &Update) {
     } = *model;
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
-    egui::Window::new("Editor configuration").show(&ctx, |ui| {
+    let window = egui::Window::new("Editor configuration");
+    let window = window.open(&mut wctrl.gui_visible);
+    window.show(&ctx, |ui| {
         *egui_rect = ui.clip_rect();
         egui::Grid::new("my_grid")
             .num_columns(2)
@@ -43,6 +49,10 @@ pub fn update_gui(model: &mut Model, update: &Update) {
             ui.add(toggle(&mut plot_config.draw_grid));
             ui.end_row();
 
+            ui.label("Show trajectory");
+            ui.add(toggle(&mut trajectory.is_visible));
+            ui.end_row();
+
             ui.label("Grid size");
             ui.add(egui::Slider::new(&mut plot_config.grid_step, 20.0..=200.0));
             ui.end_row();
@@ -53,6 +63,10 @@ pub fn update_gui(model: &mut Model, update: &Update) {
 
             ui.label("Canvas scale");
             ui.add(egui::Slider::new(&mut wtrans.scale, 0.5..=2.0));
+            ui.end_row();
+
+            ui.label("Trajectory alpha");
+            ui.add(egui::Slider::new(&mut trajectory.alpha, 0.001..=1.0));
             ui.end_row();
             
             if changed == true {
@@ -72,25 +86,44 @@ pub fn update_gui(model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Save map").clicked() {
                     *saved_file_name = save_to_file(map_points, saved_file_name);
-                    timer_event.reset_time();
+                    timer_event.reset_time(SAVED_STRING);
                 }
             });
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Save as").clicked() {
                     *saved_file_name = save_to_file(map_points, &String::from(""));
-                    timer_event.reset_time();
+                    timer_event.reset_time(SAVED_STRING);
                 }
             });
+            ui.end_row();
+
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                if ui.button("Snapshot").clicked() {
+                    take_snapshot(&app.main_window());
+                    timer_event.reset_time(SNAPSHOT_STRING);
+                }
+            }); 
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                if ui.button("Load map").clicked() {
+                    let mut raw_points: Vec<Vec<Point2>> = Vec::new();
+                    load_map_file(&mut raw_points);
+                    *map_points = from_raw_points(&raw_points);
+                }
+            });
+            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                if ui.button("Load traj").clicked() {
+                    load_traj_file(&mut trajectory.traj);
+                }
+            });
+            ui.end_row();
         });
         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-            if timer_event.is_recent_saved() == true {
-                ui.label(SAVED_STRING);
-            } else {
-                ui.label(NONE_STRING);
-            }
+            ui.label(timer_event.str_to_display());
         });
     });
 }
+
+
 
 fn update_status(scrn_mov: &mut bool, obj_mov: &mut bool) {
     *obj_mov &= !*scrn_mov;
