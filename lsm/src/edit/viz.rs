@@ -38,10 +38,8 @@ pub fn model(app: &App) -> Model {
 
 pub fn update(_app: &App, _model: &mut Model, _update: Update) {
     gui::update_gui(_app, _model, &_update);
-    if _model.timer_event.is_recent_saved() == true {
-        if _model.timer_event.time_elapsed() > 3. {
-            _model.timer_event.save_expire();
-        }
+    if let Some(result) = _model.timer_event.check_buffer() {
+        _model.timer_event.item = result;
     }
 }
 

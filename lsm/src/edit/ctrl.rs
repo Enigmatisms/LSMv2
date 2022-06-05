@@ -23,13 +23,15 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
         Key::S => {
             if _model.key_stat.ctrl_pressed == true {
                 _model.saved_file_name = save_to_file(&_model.map_points, &_model.saved_file_name);
-                _model.timer_event.reset_time(">>> Map file saved <<<");
+                _model.timer_event.activate(String::from("..."));
+                _model.timer_event.item = String::from(">>> Map file saved <<<");
             }
         }
         Key::P => {
             if _model.key_stat.ctrl_pressed == true {
                 plot::take_snapshot(&_app.main_window());
-                _model.timer_event.reset_time(">>> Screenshot saved <<<");
+                _model.timer_event.activate(String::from("..."));
+                _model.timer_event.item = String::from(">>> Screenshot saved <<<");
             }
         },
         _ => {},
