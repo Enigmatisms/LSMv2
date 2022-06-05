@@ -1,7 +1,7 @@
 use nannou::prelude::*;
 use nannou_egui::{self, egui};
 
-use super::model::Model;
+use super::model::{Model, DrawState};
 use super::ctrl::clear_offset;
 use super::mesh::from_raw_points;
 use crate::utils::plot::take_snapshot;
@@ -22,6 +22,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
         ref mut scrn_mov,
         ref mut obj_mov,
         ref mut egui_rect,
+        ref mut draw_state,
         ref mut timer_event,
         ref mut color,
         ref mut key_stat,
@@ -73,70 +74,77 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             .striped(true)
         .show(ui, |ui| {
             ui.label("Grid size");
-            ui.add(egui::Slider::new(&mut plot_config.grid_step, 20.0..=200.0));
+            // ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                ui.add(egui::Slider::new(&mut plot_config.grid_step, 20.0..=200.0));
+            // });
             ui.end_row();
 
             ui.label("Grid alpha");
-            ui.add(egui::Slider::new(&mut plot_config.grid_alpha, 0.001..=0.05));
+            // ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                ui.add(egui::Slider::new(&mut plot_config.grid_alpha, 0.001..=0.05));
+            // });
             ui.end_row();
 
             ui.label("Canvas scale");
-            ui.add(egui::Slider::new(&mut wtrans.scale, 0.5..=2.0));
+            // ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                ui.add(egui::Slider::new(&mut wtrans.scale, 0.5..=2.0));
+            // });
             ui.end_row();
 
             ui.label("Trajectory alpha");
-            ui.add(egui::Slider::new(&mut trajectory.alpha, 0.001..=1.0));
+            // ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                ui.add(egui::Slider::new(&mut trajectory.alpha, 0.001..=1.0));
+            // });
+            ui.end_row();
+        });
+
+        egui::Grid::new("buttons")
+            .num_columns(2)
+            .spacing([24.0, 5.0])
+            .striped(true)
+        .show(ui, |ui| {
+            if ui.button("Centering view").clicked() {
+                clear_offset(wtrans);
+            }
+            if ui.button("Take screenshot").clicked() {
+                take_snapshot(&app.main_window());
+                timer_event.activate(String::from("..."));
+                timer_event.item = String::from(SNAPSHOT_STRING);
+            }
             ui.end_row();
             
-            
-        // });
-        // egui::Grid::new("buttons")
-        //     .num_columns(2)
-        //     .spacing([24.0, 5.0])
-        // .show(ui, |ui| {
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Centering").clicked() {
-                    clear_offset(wtrans);
-                }
-            }); 
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Take screenshot").clicked() {
-                    take_snapshot(&app.main_window());
-                    timer_event.activate(String::from("..."));
-                    timer_event.item = String::from(SNAPSHOT_STRING);
-                }
-            });
-            ui.end_row();
-            
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Save map").clicked() {
-                    *saved_file_name = save_to_file(map_points, saved_file_name);
-                    timer_event.activate(String::from("..."));
-                    timer_event.item = String::from(SAVED_STRING);
-                }
-            });
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Save as...").clicked() {
-                    *saved_file_name = save_to_file(map_points, &String::from(""));
-                    timer_event.activate(String::from("..."));
-                    timer_event.item = String::from(SAVED_STRING);
-                }
-            });
+            if ui.button("Save map").clicked() {
+                *saved_file_name = save_to_file(map_points, saved_file_name);
+                timer_event.activate(String::from("..."));
+                timer_event.item = String::from(SAVED_STRING);
+            }
+            if ui.button("Save as...").clicked() {
+                *saved_file_name = save_to_file(map_points, &String::from(""));
+                timer_event.activate(String::from("..."));
+                timer_event.item = String::from(SAVED_STRING);
+            }
             ui.end_row();
 
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Load map").clicked() {
-                    let mut raw_points: Vec<Vec<Point2>> = Vec::new();
-                    load_map_file(&mut raw_points);
-                    *map_points = from_raw_points(&raw_points);
-                }
-            });
-            ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-                if ui.button("Load trajectory").clicked() {
-                    load_traj_file(&mut trajectory.traj);
-                }
-            });
+            if ui.button("Load map").clicked() {
+                let mut raw_points: Vec<Vec<Point2>> = Vec::new();
+                load_map_file(&mut raw_points);
+                *map_points = from_raw_points(&raw_points);
+            }
+            if ui.button("Load trajectory").clicked() {
+                load_traj_file(&mut trajectory.traj);
+            }
             ui.end_row();
+        });
+        // // egui::Grid::new("slide_bars")
+        // //     .num_columns(3)
+        // //     .spacing([16.0, 5.0])
+        // // .show(ui, |ui| {
+        // //     ui.end_row();
+        // // });
+        ui.horizontal(|ui| {
+                ui.selectable_value(draw_state, DrawState::Arbitrary, "Normal");
+                ui.selectable_value(draw_state, DrawState::Straight, "Line");
+                ui.selectable_value(draw_state, DrawState::Rect, "Rect");
         });
         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
             ui.label(timer_event.item.as_str());

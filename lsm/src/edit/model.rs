@@ -24,6 +24,13 @@ impl Selection {
     }
 }
 
+#[derive(PartialEq, Eq)]
+pub enum DrawState {
+    Arbitrary,
+    Straight,
+    Rect,
+}
+
 // TODO: 个人希望，此处存储点使用链表，则结果的存储使用链表的链表
 pub struct Model {
     pub map_points: Vec<Chain>,
@@ -40,6 +47,7 @@ pub struct Model {
     pub scrn_mov: bool,
     pub obj_mov: bool,
     pub mouse_moving_object: bool,
+    pub draw_state: DrawState,
     pub timer_event: at::AsyncTimerEvent<String>
 }
 
@@ -62,6 +70,7 @@ impl Model {
             scrn_mov: false,
             obj_mov: false,
             mouse_moving_object: false,
+            draw_state: DrawState::Arbitrary,
             timer_event: at::AsyncTimerEvent::new(3)
         }
     }
@@ -69,7 +78,7 @@ impl Model {
     #[inline(always)]
     pub fn cursor_in_gui(&self, w_h: &(f32, f32), pt: &Point2) -> bool {
         let local_pt = pt2(pt.x + 0.5 * w_h.0, 0.5 * w_h.1 - pt.y);
-        (local_pt.x > self.egui_rect.left()) && (local_pt.y + 30. > self.egui_rect.top()) && (local_pt.x < self.egui_rect.right()) && (local_pt.y - 240. < self.egui_rect.top())
+        (local_pt.x > self.egui_rect.left()) && (local_pt.y + 30. > self.egui_rect.top()) && (local_pt.x < self.egui_rect.right()) && (local_pt.y - 256. < self.egui_rect.top())
     }
 }
 
