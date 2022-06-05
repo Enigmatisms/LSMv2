@@ -30,13 +30,12 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
     } = *model;
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
-    let window = egui::Window::new("Editor configuration");
+    let window = egui::Window::new("Editor configuration").default_width(270.);
     let window = window.open(&mut wctrl.gui_visible);
     window.show(&ctx, |ui| {
         *egui_rect = ui.clip_rect();
+        
         egui::Grid::new("switch_grid")
-            .num_columns(4)
-            .spacing([12.0, 5.0])
             .striped(true)
         .show(ui, |ui| {
             let mut activity_changed = false;
@@ -50,7 +49,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.label("Draw grid");
             ui.add(toggle(&mut plot_config.draw_grid));
 
-            ui.label("Show trajectory");
+            ui.label("Trajectory");
             ui.add(toggle(&mut trajectory.is_visible));
             ui.end_row();
 
@@ -66,88 +65,88 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             if activity_changed == true {
                 update_status(scrn_mov, obj_mov);
             }
+
+            ui.label("Drawing mode");
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                ui.selectable_value(draw_state, DrawState::Arbitrary, "Normal");
+            });
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                ui.selectable_value(draw_state, DrawState::Straight, "Line");
+            });
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                ui.selectable_value(draw_state, DrawState::Rect, "Rect");
+            });
+            ui.end_row();
         });
 
         egui::Grid::new("slide_bars")
-            .num_columns(2)
-            .spacing([24.0, 5.0])
             .striped(true)
         .show(ui, |ui| {
             ui.label("Grid size");
-            // ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                ui.add(egui::Slider::new(&mut plot_config.grid_step, 20.0..=200.0));
-            // });
+            ui.add(egui::Slider::new(&mut plot_config.grid_step, 20.0..=200.0));
             ui.end_row();
 
             ui.label("Grid alpha");
-            // ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                ui.add(egui::Slider::new(&mut plot_config.grid_alpha, 0.001..=0.05));
-            // });
+            ui.add(egui::Slider::new(&mut plot_config.grid_alpha, 0.001..=0.05));
             ui.end_row();
 
-            ui.label("Canvas scale");
-            // ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                ui.add(egui::Slider::new(&mut wtrans.scale, 0.5..=2.0));
-            // });
-            ui.end_row();
-
-            ui.label("Trajectory alpha");
-            // ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                ui.add(egui::Slider::new(&mut trajectory.alpha, 0.001..=1.0));
-            // });
-            ui.end_row();
-        });
-
-        egui::Grid::new("buttons")
-            .num_columns(2)
-            .spacing([24.0, 5.0])
-            .striped(true)
-        .show(ui, |ui| {
-            if ui.button("Centering view").clicked() {
-                clear_offset(wtrans);
-            }
-            if ui.button("Take screenshot").clicked() {
-                take_snapshot(&app.main_window());
-                timer_event.activate(String::from("..."));
-                timer_event.item = String::from(SNAPSHOT_STRING);
-            }
-            ui.end_row();
             
-            if ui.button("Save map").clicked() {
-                *saved_file_name = save_to_file(map_points, saved_file_name);
-                timer_event.activate(String::from("..."));
-                timer_event.item = String::from(SAVED_STRING);
-            }
-            if ui.button("Save as...").clicked() {
-                *saved_file_name = save_to_file(map_points, &String::from(""));
-                timer_event.activate(String::from("..."));
-                timer_event.item = String::from(SAVED_STRING);
-            }
+            ui.label("Trajectory alpha");
+            ui.add(egui::Slider::new(&mut trajectory.alpha, 0.001..=1.0));
             ui.end_row();
 
-            if ui.button("Load map").clicked() {
-                let mut raw_points: Vec<Vec<Point2>> = Vec::new();
-                load_map_file(&mut raw_points);
-                *map_points = from_raw_points(&raw_points);
-            }
-            if ui.button("Load trajectory").clicked() {
-                load_traj_file(&mut trajectory.traj);
-            }
+            ui.label("Canvas zoom scale");
+            ui.add(egui::Slider::new(&mut wtrans.scale, 0.5..=2.0));
+            ui.end_row();
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Centering view").clicked() {
+                    clear_offset(wtrans);
+                }
+            });
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Take screenshot").clicked() {
+                    take_snapshot(&app.main_window());
+                    timer_event.activate(String::from("..."));
+                    timer_event.item = String::from(SNAPSHOT_STRING);
+                }
+            });
+
+            ui.end_row();
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Save map file").clicked() {
+                    *saved_file_name = save_to_file(map_points, saved_file_name);
+                    timer_event.activate(String::from("..."));
+                    timer_event.item = String::from(SAVED_STRING);
+                }
+            });
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Save as file ...").clicked() {
+                    *saved_file_name = save_to_file(map_points, &String::from(""));
+                    timer_event.activate(String::from("..."));
+                    timer_event.item = String::from(SAVED_STRING);
+                }
+            });
+            ui.end_row();
+
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Load map file").clicked() {
+                    let mut raw_points: Vec<Vec<Point2>> = Vec::new();
+                    load_map_file(&mut raw_points);
+                    *map_points = from_raw_points(&raw_points);
+                }
+            });
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Load trajectory").clicked() {
+                    load_traj_file(&mut trajectory.traj);
+                }
+            });
             ui.end_row();
         });
-        // // egui::Grid::new("slide_bars")
-        // //     .num_columns(3)
-        // //     .spacing([16.0, 5.0])
-        // // .show(ui, |ui| {
-        // //     ui.end_row();
-        // // });
+
         ui.horizontal(|ui| {
-                ui.selectable_value(draw_state, DrawState::Arbitrary, "Normal");
-                ui.selectable_value(draw_state, DrawState::Straight, "Line");
-                ui.selectable_value(draw_state, DrawState::Rect, "Rect");
-        });
-        ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-            ui.label(timer_event.item.as_str());
+            ui.centered_and_justified(|ui| {
+                ui.label(timer_event.item.as_str());
+            });
         });
     });
 }
@@ -171,7 +170,7 @@ fn update_status(scrn_mov: &mut bool, obj_mov: &mut bool) {
 /// toggle_ui(ui, &mut my_bool);
 /// ```
 pub fn toggle_ui(ui: &mut egui::Ui, on: &mut bool) -> egui::Response {
-    let desired_size = ui.spacing().interact_size.y * egui::vec2(2.0, 1.0);
+    let desired_size = ui.spacing().interact_size.y * egui::vec2(3.0, 1.0);
     let (rect, mut response) = ui.allocate_exact_size(desired_size, egui::Sense::click());
     if response.clicked() {
         *on = !*on;
