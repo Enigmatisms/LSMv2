@@ -5,6 +5,7 @@ use super::mesh::Chain;
 use crate::utils::map_io;
 use crate::utils::color::EditorColor;
 use crate::utils::structs::*;
+use crate::utils::async_timer as at;
 
 pub struct Selection {
     pub selected: Vec<Vec<usize>>,
@@ -39,7 +40,7 @@ pub struct Model {
     pub scrn_mov: bool,
     pub obj_mov: bool,
     pub mouse_moving_object: bool,
-    pub timer_event: TimerEvent
+    pub timer_event: at::AsyncTimerEvent<String>
 }
 
 impl Model {
@@ -61,7 +62,7 @@ impl Model {
             scrn_mov: false,
             obj_mov: false,
             mouse_moving_object: false,
-            timer_event: TimerEvent::new()
+            timer_event: at::AsyncTimerEvent::new(3)
         }
     }
 

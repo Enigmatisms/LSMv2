@@ -3,8 +3,8 @@ use nannou_egui::{self, egui};
 
 use super::model::Model;
 use super::ctrl::clear_offset;
-use crate::utils::plot::take_snapshot;
 use super::mesh::from_raw_points;
+use crate::utils::plot::take_snapshot;
 use crate::utils::map_io::{save_to_file, load_traj_file, load_map_file};
 
 static SAVED_STRING: &str = ">>> Map file saved <<<";
@@ -102,7 +102,8 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Take screenshot").clicked() {
                     take_snapshot(&app.main_window());
-                    timer_event.reset_time(SNAPSHOT_STRING);
+                    timer_event.activate(String::from("..."));
+                    timer_event.item = String::from(SNAPSHOT_STRING);
                 }
             });
             ui.end_row();
@@ -110,13 +111,15 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Save map").clicked() {
                     *saved_file_name = save_to_file(map_points, saved_file_name);
-                    timer_event.reset_time(SAVED_STRING);
+                    timer_event.activate(String::from("..."));
+                    timer_event.item = String::from(SAVED_STRING);
                 }
             });
             ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                 if ui.button("Save as...").clicked() {
                     *saved_file_name = save_to_file(map_points, &String::from(""));
-                    timer_event.reset_time(SAVED_STRING);
+                    timer_event.activate(String::from("..."));
+                    timer_event.item = String::from(SAVED_STRING);
                 }
             });
             ui.end_row();
@@ -136,7 +139,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.end_row();
         });
         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-            ui.label(timer_event.str_to_display());
+            ui.label(timer_event.item.as_str());
         });
     });
 }

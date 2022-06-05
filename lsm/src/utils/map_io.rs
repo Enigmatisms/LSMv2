@@ -27,7 +27,6 @@ pub struct ScannerConfig {
     pub pid_kd: f32,
 }
 
-
 #[derive(Deserialize)]
 pub struct ScreenConfig {
     pub width: u32,

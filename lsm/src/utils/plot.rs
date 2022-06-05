@@ -87,7 +87,7 @@ pub fn take_snapshot(window: &Window) {
     let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
     let date_path = datetime.format("../screenshots/screenshot-%Y-%m-%d-%H-%M-%S.png").to_string();
     if Path::new("../screenshots/").exists() {
-        std::fs::create_dir("../screenshots/");
+        let _ = std::fs::create_dir("../screenshots/");
     }
     window.capture_frame(date_path);
 }
