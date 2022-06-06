@@ -2,6 +2,7 @@ use nannou::prelude::*;
 use super::gui;
 use super::ctrl;
 use super::model::Model;
+use super::model::DrawState;
 use super::mesh::screen_bounds;
 
 use crate::utils::map_io;
@@ -45,14 +46,14 @@ fn event(_app: &App, _model: &mut Model, _event: WindowEvent) {}
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = plot::window_transform(app.draw(), &model.wtrans);
 
+    draw.background().rgb(model.color.bg_color.0, model.color.bg_color.1, model.color.bg_color.2);
     if model.plot_config.draw_grid == true {
         let win = app.main_window().rect();
         let bounds = screen_bounds(&model.map_points, &win, model.plot_config.grid_step);
-        plot::draw_grid(&draw, &bounds, model.plot_config.grid_step, 1.0, model.plot_config.grid_alpha);
-        plot::draw_grid(&draw, &bounds, model.plot_config.grid_step / 5., 0.5, model.plot_config.grid_alpha);
+        plot::draw_grid(&draw, &bounds, model.plot_config.grid_step, 1.0, &model.color.grid_color, model.plot_config.grid_alpha);
+        plot::draw_grid(&draw, &bounds, model.plot_config.grid_step / 5., 0.5, &model.color.grid_color, model.plot_config.grid_alpha);
     }
 
-    draw.background().rgb(model.color.bg_color.0, model.color.bg_color.1, model.color.bg_color.2);
     plot_unfinished(&draw, model);
     plot_finished(&draw, model);
     draw_selected_points(&draw, model);
@@ -71,6 +72,25 @@ fn view(app: &App, model: &Model, frame: Frame) {
     }
     if model.key_stat.ctrl_pressed == true {
         plot::draw_frame(app, &draw, &model.wtrans);
+    }
+    if model.add_drawer.len() > 0 && model.add_drawer.is_last_set() {                 // different mode
+        match model.draw_state {
+            DrawState::Arbitrary => {}               // arbitrary drawing, directly inserting points
+            DrawState::Straight => {                // draw straight line (related to the last clicked point)
+                let mut iterator = model.add_drawer.iter();
+                let start = *iterator.next().unwrap();
+                let end = *iterator.next().unwrap();
+                draw.line()
+                    .points(start, end)
+                    .rgba(model.color.line_color.0, model.color.line_color.1, model.color.line_color.2, model.color.line_color.3);
+            },
+            DrawState::Rect => {     
+                let points = model.add_drawer.get_points2draw();                // draw rectangle (related to the last clicked point)
+                draw.polygon()
+                    .points(points)
+                    .rgba(model.color.shape_color.0, model.color.shape_color.1, model.color.shape_color.2, model.color.shape_color.3);
+            }
+        };
     }
 
     draw.to_frame(app, &frame).unwrap();

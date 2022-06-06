@@ -1,5 +1,6 @@
 use nannou::prelude::*;
 use super::model::Model;
+use super::model::DrawState;
 use super::mesh::Chain;
 use crate::utils::utils;
 use crate::utils::plot;
@@ -59,6 +60,7 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
             if last_vec.len() > 2 {
                 _model.map_points.push(Chain::new());
             }
+            _model.add_drawer.clear_last_flag();
         },
         Key::LShift => {                // shifting screen
             _model.scrn_mov = false;
@@ -125,7 +127,30 @@ pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
             MouseButton::Left => {
                 // 增加新的点
                 let last_vec = _model.map_points.last_mut().unwrap();
-                last_vec.push(plot::localized_position(&point, &_model.wtrans));
+                match _model.draw_state {
+                    DrawState::Arbitrary => {               // arbitrary drawing, directly inserting points
+                        last_vec.push(plot::localized_position(&point, &_model.wtrans));
+                    },
+                    DrawState::Straight => {                // draw straight line (related to the last clicked point)
+                        if _model.add_drawer.is_last_set() == false {
+                            last_vec.push(plot::localized_position(&point, &_model.wtrans));
+                        } else {
+                            last_vec.push(*_model.add_drawer.iter().last().unwrap());
+                        }
+                        _model.add_drawer.update_last(&_model.map_points);
+                    },
+                    DrawState::Rect => {                     // draw rectangle (related to the last clicked point)
+                        if _model.add_drawer.is_last_set() == false {
+                            last_vec.push(plot::localized_position(&point, &_model.wtrans));
+                            _model.add_drawer.update_last(&_model.map_points);
+                        } else {
+                            for pt in _model.add_drawer.iter().skip(1) {
+                                last_vec.push(*pt);
+                            }
+                            _model.add_drawer.clear_last_flag();
+                        }
+                    }
+                };
             },
             MouseButton::Right => {
                 _model.select.key_pressed = true;
@@ -158,6 +183,9 @@ pub fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
     } else if _model.obj_mov == true {              // 选中物体移动模式
         if _button == MouseButton::Left {
             _model.mouse_moving_object = false;
+            if _model.draw_state != DrawState::Arbitrary {
+                _model.add_drawer.update_last(&_model.map_points);
+            }
         }
     } else {
         if _model.select.key_pressed == true {      // 框选完成，计算选框以及所有被选中点
@@ -207,6 +235,16 @@ pub fn mouse_moved(_app: &App, _model: &mut Model, _pos: Point2) {
     } else {
         if _model.select.key_pressed == true {
             _model.select.tr = plot::localized_position(&point, &_model.wtrans);
+        } else {
+            match _model.draw_state {
+                DrawState::Straight => {
+                    _model.add_drawer.straight_point(&point, &_model.wtrans);
+                },
+                DrawState::Rect => {
+                    _model.add_drawer.get_rectangle(&point, &_model.wtrans);
+                },
+                _ => {}
+            }
         }
     }
 }

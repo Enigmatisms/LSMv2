@@ -2,6 +2,7 @@ use nannou::prelude::*;
 use nannou_egui::{Egui, egui::Rect};
 
 use super::mesh::Chain;
+use super::addm::AdditionalMode;
 use crate::utils::map_io;
 use crate::utils::color::EditorColor;
 use crate::utils::structs::*;
@@ -48,7 +49,8 @@ pub struct Model {
     pub obj_mov: bool,
     pub mouse_moving_object: bool,
     pub draw_state: DrawState,
-    pub timer_event: at::AsyncTimerEvent<String>
+    pub timer_event: at::AsyncTimerEvent<String>,
+    pub add_drawer: AdditionalMode
 }
 
 impl Model {
@@ -71,7 +73,8 @@ impl Model {
             obj_mov: false,
             mouse_moving_object: false,
             draw_state: DrawState::Arbitrary,
-            timer_event: at::AsyncTimerEvent::new(3)
+            timer_event: at::AsyncTimerEvent::new(3),
+            add_drawer: AdditionalMode::new()
         }
     }
 

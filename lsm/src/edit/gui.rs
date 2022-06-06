@@ -26,6 +26,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
         ref mut timer_event,
         ref mut color,
         ref mut key_stat,
+        ref mut add_drawer,
         ..
     } = *model;
     egui.set_elapsed_time(update.since_start);
@@ -65,17 +66,21 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             if activity_changed == true {
                 update_status(scrn_mov, obj_mov);
             }
-
+            
+            let mut add_drawer_toggled = false;
             ui.label("Drawing mode");
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                ui.selectable_value(draw_state, DrawState::Arbitrary, "Normal");
+                add_drawer_toggled |= ui.selectable_value(draw_state, DrawState::Arbitrary, "Normal").changed();
             });
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                ui.selectable_value(draw_state, DrawState::Straight, "Line");
+                add_drawer_toggled |= ui.selectable_value(draw_state, DrawState::Straight, "Line").changed();
             });
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                ui.selectable_value(draw_state, DrawState::Rect, "Rect");
+                add_drawer_toggled |= ui.selectable_value(draw_state, DrawState::Rect, "Rect").changed();
             });
+            if add_drawer_toggled == true {
+                add_drawer.update_last(map_points);
+            }
             ui.end_row();
         });
 
@@ -87,7 +92,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.end_row();
 
             ui.label("Grid alpha");
-            ui.add(egui::Slider::new(&mut plot_config.grid_alpha, 0.001..=0.05));
+            ui.add(egui::Slider::new(&mut plot_config.grid_alpha, 0.001..=0.1));
             ui.end_row();
 
             

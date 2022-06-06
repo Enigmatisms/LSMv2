@@ -81,8 +81,8 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
     if model.plot_config.draw_grid == true {
         let win = app.main_window().rect();
-        plot::draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, model.plot_config.grid_alpha);
-        plot::draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, model.plot_config.grid_alpha);
+        plot::draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, &(1., 1., 1.), model.plot_config.grid_alpha);
+        plot::draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, &(1., 1., 1.), model.plot_config.grid_alpha);
     }
 
     draw.background().color(BLACK);

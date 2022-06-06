@@ -24,7 +24,7 @@ pub fn plot_trajectory(draw: &Draw, trajectory: &Vec<Point2>, rgb: &(f32, f32, f
         .rgba(rgb.0, rgb.1, rgb.2, alpha);
 }
 
-pub fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
+pub fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, color: &(f32, f32, f32), alpha: f32) {
     let step_by = || (0..).map(|i| i as f32 * step);
     let r_iter = step_by().take_while(|&f| f < win.right());
     let l_iter = step_by().map(|f| -f).take_while(|&f| f > win.left());
@@ -32,7 +32,7 @@ pub fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
     for x in x_iter {
         draw.line()
             .weight(weight)
-            .rgba(1., 1., 1., alpha)
+            .rgba(color.0, color.1, color.2, alpha)
             .points(pt2(x, win.bottom()), pt2(x, win.top()));
         }
         let t_iter = step_by().take_while(|&f| f < win.top());
@@ -41,7 +41,7 @@ pub fn draw_grid(draw: &Draw, win: &Rect, step: f32, weight: f32, alpha: f32) {
     for y in y_iter {
         draw.line()
             .weight(weight)
-            .rgba(1., 1., 1., alpha)
+            .rgba(color.0, color.1, color.2, alpha)
             .points(pt2(win.left(), y), pt2(win.right(), y));
     }
 }
@@ -78,6 +78,12 @@ pub fn localized_position(pt: &Point2, wint: &WindowTransform) -> Point2 {
     let rotation_inv= utils::get_rotation(&-wint.rot);
     res = rotation_inv.mul_vec2(res);
     res / wint.scale
+}
+
+#[inline(always)]
+pub fn to_screen(pt: &Point2, wtrans: &WindowTransform) -> Point2 {
+    let rotation = utils::get_rotation(&wtrans.rot);
+    wtrans.scale * rotation.mul_vec2(*pt) + wtrans.t
 }
 
 pub fn take_snapshot(window: &Window) {

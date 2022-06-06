@@ -4,6 +4,7 @@ type Color4 = (f32, f32, f32, f32);
 pub struct EditorColor {
     pub bg_color: Color3,
     pub traj_color: Color3,
+    pub grid_color: Color3,
     pub selected_pt: Color4,
     pub unfinished_pt: Color4,
     pub finished_pt: Color4,
@@ -18,6 +19,7 @@ impl EditorColor {
         EditorColor {
             traj_color: (0., 1., 0.),
             bg_color: (0., 0., 0.),
+            grid_color: (1., 1., 1.),
             selected_pt: (1.000000, 0.094118, 0.094118, 1.0),
             unfinished_pt: (0.301961, 0.298039, 0.490196, 0.8),
             finished_pt: (0.301961, 0.298039, 0.490196, 0.8),
@@ -32,6 +34,8 @@ impl EditorColor {
         if self.night_mode == true {
             self.traj_color = (0., 1., 0.);
             self.bg_color = (0., 0., 0.);
+            self.grid_color = (1., 1., 1.);
+
             self.selected_pt = (1.000000, 0.094118, 0.094118, 1.0);
             self.unfinished_pt = (0.301961, 0.298039, 0.490196, 0.8);
             self.finished_pt = (0.301961, 0.298039, 0.490196, 0.8);
@@ -41,6 +45,8 @@ impl EditorColor {
         } else {
             self.traj_color = (0., 0.5, 0.);
             self.bg_color = (1., 1., 1.);
+            self.grid_color = (0., 0., 0.);
+
             self.selected_pt = (0.700000, 0.000000, 0.000000, 1.0);
             self.unfinished_pt = (0.160784, 0.203922, 0.384314, 0.8);
             self.finished_pt = (0.566667, 0.543137, 0.472549, 0.9);
