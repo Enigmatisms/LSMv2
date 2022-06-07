@@ -176,6 +176,7 @@ fn read_lines<T>(filepath: T) -> Option<Vec<String>> where T: AsRef<std::path::P
         }
         return Some(result_vec);
     }
+    println!("Unable to open file.");
     return None;
 }
 

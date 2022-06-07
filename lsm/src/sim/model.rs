@@ -68,9 +68,21 @@ impl Model {
             egui: Egui::from_window(&app.window(window_id).unwrap()),
             egui_rect: Rect::from_x_y_ranges(0.0..=1.0, 0.0..=1.0),
             key_stat: KeyStatus{ctrl_pressed: false},
-            trajectory: Trajectory::new(),
+            trajectory: Trajectory::new(),                                      // TODO: trajectory recorder
             timer_event: at::AsyncTimerEvent::new(3)
         }
+    }
+
+    pub fn recompute_grid(grid_specs: &mut (f32, f32, f32, f32), occ_grid: &mut Array2D<i32>, meshes: &map_io::Meshes, grid_size: f32) {
+        *grid_specs = grid::get_bounds(&meshes, grid_size);
+        *occ_grid = Array2D::filled_with(-1, grid_specs.3 as usize, grid_specs.2 as usize);
+        grid::line_drawing(occ_grid, meshes, grid_specs.0, grid_specs.1, grid_size);
+    }
+
+    #[inline(always)]
+    pub fn cursor_in_gui(&self, w_h: &(f32, f32), pt: &Point2) -> bool {
+        let local_pt = pt2(pt.x + 0.5 * w_h.0, 0.5 * w_h.1 - pt.y);
+        (local_pt.x > self.egui_rect.left()) && (local_pt.y + 30. > self.egui_rect.top()) && (local_pt.x < self.egui_rect.right()) && (local_pt.y - 256. < self.egui_rect.top())
     }
 }
 

@@ -5,3 +5,4 @@ pub mod structs;
 pub mod async_timer;
 pub mod color;
 pub mod toggle;
+pub mod consts;

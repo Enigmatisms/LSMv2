@@ -5,7 +5,7 @@ use super::mesh::Chain;
 use crate::utils::utils;
 use crate::utils::plot;
 use crate::utils::map_io::save_to_file;
-use crate::utils::structs::WindowTransform;
+use crate::utils::consts::*;
 
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
@@ -24,15 +24,15 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
         Key::S => {
             if _model.key_stat.ctrl_pressed == true {
                 _model.saved_file_name = save_to_file(&_model.map_points, &_model.saved_file_name);
-                _model.timer_event.activate(String::from("..."));
-                _model.timer_event.item = String::from(">>> Map file saved <<<");
+                _model.timer_event.activate(String::from(NULL_STR));
+                _model.timer_event.item = String::from(SAVED_STRING);
             }
         }
         Key::P => {
             if _model.key_stat.ctrl_pressed == true {
                 plot::take_snapshot(&_app.main_window());
-                _model.timer_event.activate(String::from("..."));
-                _model.timer_event.item = String::from(">>> Screenshot saved <<<");
+                _model.timer_event.activate(String::from(NULL_STR));
+                _model.timer_event.item = String::from(SNAPSHOT_STRING);
             }
         },
         _ => {},
@@ -50,7 +50,7 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
             } 
         },
         Key::H => {                     // Set screen offsets to zero
-            clear_offset(&mut _model.wtrans);
+            _model.wtrans.clear_offset();
         },
         Key::V => {
             _model.wctrl.switch_gui_visibility();
@@ -259,11 +259,6 @@ pub fn mouse_wheel(_app: &App, _model: &mut Model, _dt: MouseScrollDelta, _phase
             println!("Mouse scroll data returned type: PixelDelta, which is not implemented.");
         }
     }
-}
-
-pub fn clear_offset(wtrans: &mut WindowTransform) {
-    wtrans.rot = 0.;
-    wtrans.t = pt2(0., 0.);
 }
 
 fn calc_select_box(point: &Point2, model: &mut Model) {

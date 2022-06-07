@@ -2,14 +2,11 @@ use nannou::prelude::*;
 use nannou_egui::{self, egui};
 
 use super::model::{Model, DrawState};
-use super::ctrl::clear_offset;
 use super::mesh::from_raw_points;
 use crate::utils::toggle::toggle;
 use crate::utils::plot::take_snapshot;
 use crate::utils::map_io::{save_to_file, load_traj_file, load_map_file};
-
-static SAVED_STRING: &str = ">>> Map file saved <<<";
-static SNAPSHOT_STRING: &str = ">>> Screenshot saved <<<";
+use crate::utils::consts::*;
 
 pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
     let Model {
@@ -106,13 +103,13 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.end_row();
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Centering view").clicked() {
-                    clear_offset(wtrans);
+                    wtrans.clear_offset();
                 }
             });
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Take screenshot").clicked() {
                     take_snapshot(&app.main_window());
-                    timer_event.activate(String::from("..."));
+                    timer_event.activate(String::from(NULL_STR));
                     timer_event.item = String::from(SNAPSHOT_STRING);
                 }
             });
@@ -121,14 +118,14 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Save map file").clicked() {
                     *saved_file_name = save_to_file(map_points, saved_file_name);
-                    timer_event.activate(String::from("..."));
+                    timer_event.activate(String::from(NULL_STR));
                     timer_event.item = String::from(SAVED_STRING);
                 }
             });
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Save as file ...").clicked() {
                     *saved_file_name = save_to_file(map_points, &String::from(""));
-                    timer_event.activate(String::from("..."));
+                    timer_event.activate(String::from(NULL_STR));
                     timer_event.item = String::from(SAVED_STRING);
                 }
             });

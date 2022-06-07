@@ -1,7 +1,9 @@
 use nannou::prelude::*;
 use array2d::Array2D;
-use super::cuda_helper;
+
+use super::gui;
 use super::ctrl;
+use super::cuda_helper;
 use super::model::Model;
 use super::grid::collision_detection;
 
@@ -17,6 +19,7 @@ pub fn model(app: &App) -> Model {
         .event(event)
         .key_pressed(ctrl::key_pressed)
         .key_released(ctrl::key_released)
+        .raw_event(raw_window_event)
         .mouse_moved(ctrl::mouse_moved)
         .mouse_pressed(ctrl::mouse_pressed)
         .mouse_released(ctrl::mouse_released)
@@ -28,19 +31,35 @@ pub fn model(app: &App) -> Model {
 
     app.set_exit_on_escape(false);
     let meshes: map_io::Meshes = map_io::parse_map_file(config.map_path.as_str()).unwrap();
+
     let lidar_param = cuda_helper::Vec3_cuda{x: config.lidar.amin, y: config.lidar.amax, z:config.lidar.ainc};
     let ray_num = map_io::get_ray_num(&lidar_param);
-    let mut seg_point_arr: Vec<cuda_helper::Vec2_cuda> = Vec::new();
-    let seg_num = map_io::meshes_to_segments(&meshes, &mut seg_point_arr);
-    unsafe {
-        cuda_helper::intializeFixed(ray_num as libc::c_int);
-        cuda_helper::unwrapMeshes(seg_point_arr.as_ptr(), seg_num as libc::c_int, false);
-    }
 
-    Model::new(window_id, &config, meshes, lidar_param, ray_num)
+    initialize_cuda_end(&meshes, ray_num, false);
+
+    Model::new(app, window_id, &config, meshes, lidar_param, ray_num)
 }
 
-pub fn update(_app: &App, _model: &mut Model, _: Update) {
+fn raw_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event::WindowEvent) {
+    model.egui.handle_raw_event(event);
+}
+
+pub fn initialize_cuda_end(new_pts: &map_io::Meshes, ray_num: usize, initialized: bool) {
+    let mut seg_point_arr: Vec<cuda_helper::Vec2_cuda> = Vec::new();
+    let seg_num = map_io::meshes_to_segments(&new_pts, &mut seg_point_arr);
+    unsafe {
+        if initialized == false {
+            cuda_helper::intializeFixed(ray_num as libc::c_int);
+        }
+        cuda_helper::unwrapMeshes(seg_point_arr.as_ptr(), seg_num as libc::c_int, initialized);
+    }
+} 
+
+pub fn update(_app: &App, _model: &mut Model, _update: Update) {
+    gui::update_gui(_app, _model, &_update);
+    if let Some(result) = _model.timer_event.check_buffer() {
+        _model.timer_event.item = result;
+    }
     static mut LOCAL_INT: f32 = 0.0;
     static mut LOCAL_DIFF: f32 = 0.0;
     if _model.initialized == false {return;}
@@ -81,17 +100,18 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
     if model.plot_config.draw_grid == true {
         let win = app.main_window().rect();
-        plot::draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, &(1., 1., 1.), model.plot_config.grid_alpha);
-        plot::draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, &(1., 1., 1.), model.plot_config.grid_alpha);
+        plot::draw_grid(&draw, &win, model.plot_config.grid_step, 1.0, &model.color.grid_color, model.plot_config.grid_alpha);
+        plot::draw_grid(&draw, &win, model.plot_config.grid_step / 5., 0.5, &model.color.grid_color, model.plot_config.grid_alpha);
     }
-
-    draw.background().color(BLACK);
+    let (bg_r, bg_g, bg_b) = model.color.bg_color;
+    draw.background().rgba(bg_r, bg_g, bg_b, 1.0);
+    let (r, g, b, a) = model.color.shape_color;
     for mesh in model.map_points.iter() {
         let points = (0..mesh.len()).map(|i| {
             mesh[i]
         });
         draw.polygon()
-            .color(WHITE)
+            .rgba(r, g, b, a)
             .points(points);
     }
 
@@ -103,7 +123,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
         .color(STEELBLUE);
 
     if model.initialized == true {
-        visualize_rays(&draw, &model.ranges, &model.pose, &model.lidar_param, model.ray_num / 3);
+        visualize_rays(&draw, &model.ranges, &model.pose, &model.lidar_param, &model.color.lidar_color, &model.ray_num / 3);
         // draw_occ_grids(&draw, &model.occ_grid, model.grid_specs.0, model.grid_specs.1, model.grid_size);
     }
         
@@ -118,9 +138,12 @@ fn view(app: &App, model: &Model, frame: Frame) {
 
     // Write the result of our drawing to the window's frame.
     draw.to_frame(app, &frame).unwrap();
+    model.egui.draw_to_frame(&frame).unwrap();
 }
 
-fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar_param: &cuda_helper::Vec3_cuda, ray_num: usize) {
+fn visualize_rays(
+    draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, 
+    lidar_param: &cuda_helper::Vec3_cuda, color: &[f32; 4], ray_num: usize) {
     let cur_angle_min = pose.z + lidar_param.x + lidar_param.z;
     for i in 0..ray_num {
         let r = ranges[i];
@@ -133,7 +156,7 @@ fn visualize_rays(draw: &Draw, ranges: &Vec<libc::c_float>, pose: &Point3, lidar
             .start(start_p)
             .end(end_p)
             .weight(1.)
-            .color(RED);
+            .rgba(color[0], color[1], color[2], color[3]);
     }
 }
 

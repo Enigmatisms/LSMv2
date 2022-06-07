@@ -91,6 +91,12 @@ impl WindowTransform {
             rot: 0., rot_start: 0., t_set: true, r_set: true, scale: 1.0,
         }
     }
+    
+    #[inline(always)]
+    pub fn clear_offset(&mut self) {
+        self.rot = 0.;
+        self.t = pt2(0., 0.);
+    }
 }
 
 impl PlotConfig {

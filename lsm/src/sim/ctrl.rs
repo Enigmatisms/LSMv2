@@ -1,6 +1,8 @@
 use nannou::prelude::*;
 use super::model::Model;
 use crate::utils::utils;
+use crate::utils::plot;
+use crate::utils::consts::*;
 
 pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
@@ -10,6 +12,14 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
         Key::D => {_model.velo.y = -_model.velo_max.x;},
         Key::Escape => {
             (_model.wctrl.exit_func)(_app);
+        },
+        Key::LControl => {_model.key_stat.ctrl_pressed = true;}
+        Key::P => {
+            if _model.key_stat.ctrl_pressed == true {
+                plot::take_snapshot(&_app.main_window());
+                _model.timer_event.activate(String::from(NULL_STR));
+                _model.timer_event.item = String::from(SNAPSHOT_STRING);
+            }
         },
         _ => {},
     }
@@ -21,7 +31,12 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
         Key::A => {_model.velo.y = 0.0;},
         Key::S => {_model.velo.x = 0.0;},
         Key::D => {_model.velo.y = 0.0;},
-        Key::P => {_model.plot_config.draw_grid = !_model.plot_config.draw_grid;},
+        Key::P => {
+            if _model.key_stat.ctrl_pressed == false {
+                _model.plot_config.draw_grid = !_model.plot_config.draw_grid;
+            }
+        },
+        Key::LControl => {_model.key_stat.ctrl_pressed = false;},
         _ => {},
     }
 }
@@ -29,6 +44,9 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
 // initial position selection
 pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
     let point = _app.mouse.position();
+    if _model.cursor_in_gui(&_app.main_window().rect().w_h(), &point) {
+        return;
+    }
     if _model.initialized == false {
         match _button {
             MouseButton::Left => {
@@ -55,6 +73,9 @@ pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
 // mouse release will determine the initial angle
 pub fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
     let now_pos = _app.mouse.position();
+    if _model.cursor_in_gui(&_app.main_window().rect().w_h(), &now_pos) {
+        return;
+    }
     if _model.initialized == false {
         match _button {
             MouseButton::Left => {
