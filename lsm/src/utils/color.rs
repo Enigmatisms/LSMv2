@@ -11,6 +11,7 @@ pub struct EditorColor {
     pub line_color: Color4,
     pub shape_color: Color4,
     pub select_box: Color4,
+    pub lidar_color: Color4,
     pub night_mode: bool
 }
 
@@ -26,6 +27,7 @@ impl EditorColor {
             line_color: (0.913725, 0.835294, 0.792157, 0.9),
             shape_color: (0.803922, 0.760784, 0.682353, 1.0),
             select_box: (0.129412, 0.333333, 0.803922, 0.1),
+            lidar_color: (1., 0., 0., 1.),
             night_mode: true
         }
     }

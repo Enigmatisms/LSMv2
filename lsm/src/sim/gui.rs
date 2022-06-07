@@ -1,33 +1,23 @@
 use nannou::prelude::*;
 use nannou_egui::{self, egui};
 
-use super::model::{Model, DrawState};
-use super::ctrl::clear_offset;
-use super::mesh::from_raw_points;
+use super::model::Model;
 use crate::utils::toggle::toggle;
 use crate::utils::plot::take_snapshot;
-use crate::utils::map_io::{save_to_file, load_traj_file, load_map_file};
-
-static SAVED_STRING: &str = ">>> Map file saved <<<";
-static SNAPSHOT_STRING: &str = ">>> Screenshot saved <<<";
+use crate::utils::map_io::load_map_file;
 
 pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
     let Model {
         ref mut map_points,
         ref mut wctrl,
-        ref mut saved_file_name,
         ref mut plot_config,
         ref mut wtrans,
         ref mut egui,
-        ref mut trajectory,
-        ref mut scrn_mov,
-        ref mut obj_mov,
         ref mut egui_rect,
-        ref mut draw_state,
-        ref mut timer_event,
-        ref mut color,
         ref mut key_stat,
-        ref mut add_drawer,
+        ref mut color,
+        ref mut trajectory,
+        ref mut timer_event,
         ..
     } = *model;
     egui.set_elapsed_time(update.since_start);
@@ -40,47 +30,17 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
         egui::Grid::new("switch_grid")
             .striped(true)
         .show(ui, |ui| {
-            let mut activity_changed = false;
-            ui.label("Move screen");
-            activity_changed |= ui.add(toggle(scrn_mov)).changed();
-            
-            ui.label("Move point");
-            activity_changed |= ui.add(toggle(obj_mov)).changed();
-            ui.end_row();
-
-            ui.label("Draw grid");
-            ui.add(toggle(&mut plot_config.draw_grid));
-
             ui.label("Trajectory");
             ui.add(toggle(&mut trajectory.is_visible));
-            ui.end_row();
-
-            ui.label("Night mode");
-            if ui.add(toggle(&mut color.night_mode)).changed() {
-                color.switch_mode();
-            }
-
             ui.label("Ctrl pressed");
             ui.add(toggle(&mut key_stat.ctrl_pressed));
             ui.end_row();
 
-            if activity_changed == true {
-                update_status(scrn_mov, obj_mov);
-            }
-            
-            let mut add_drawer_toggled = false;
-            ui.label("Drawing mode");
-            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                add_drawer_toggled |= ui.selectable_value(draw_state, DrawState::Arbitrary, "Normal").changed();
-            });
-            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                add_drawer_toggled |= ui.selectable_value(draw_state, DrawState::Straight, "Line").changed();
-            });
-            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                add_drawer_toggled |= ui.selectable_value(draw_state, DrawState::Rect, "Rect").changed();
-            });
-            if add_drawer_toggled == true {
-                add_drawer.update_last(map_points);
+            ui.label("Draw grid");
+            ui.add(toggle(&mut plot_config.draw_grid));
+            ui.label("Night mode");
+            if ui.add(toggle(&mut color.night_mode)).changed() {
+                color.switch_mode();
             }
             ui.end_row();
         });
@@ -117,23 +77,6 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
                 }
             });
 
-            ui.end_row();
-            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                if ui.button("Save map file").clicked() {
-                    *saved_file_name = save_to_file(map_points, saved_file_name);
-                    timer_event.activate(String::from("..."));
-                    timer_event.item = String::from(SAVED_STRING);
-                }
-            });
-            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
-                if ui.button("Save as file ...").clicked() {
-                    *saved_file_name = save_to_file(map_points, &String::from(""));
-                    timer_event.activate(String::from("..."));
-                    timer_event.item = String::from(SAVED_STRING);
-                }
-            });
-            ui.end_row();
-
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Load map file").clicked() {
                     let mut raw_points: Vec<Vec<Point2>> = Vec::new();
@@ -155,11 +98,4 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             });
         });
     });
-}
-
-
-
-fn update_status(scrn_mov: &mut bool, obj_mov: &mut bool) {
-    *obj_mov &= !*scrn_mov;
-    *scrn_mov &= !*obj_mov;
 }

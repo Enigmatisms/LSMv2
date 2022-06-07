@@ -1,10 +1,14 @@
 use nannou::prelude::*;
+use nannou_egui::{Egui, egui::Rect};
+
 use array2d::Array2D;
 use super::grid;
 use super::cuda_helper;
 
 use crate::utils::map_io;
-use crate::utils::structs::{PlotConfig, WindowCtrl, WindowTransform};
+use crate::utils::color::EditorColor;
+use crate::utils::structs::*;
+use crate::utils::async_timer as at;
 
 pub struct Model {
     pub map_points: Vec<Vec<Point2>>,
@@ -24,10 +28,17 @@ pub struct Model {
     pub ranges: Vec<libc::c_float>,
     pub initialized: bool,
     pub grid_size: f32,
+
+    pub color: EditorColor,
+    pub egui: Egui,
+    pub egui_rect: Rect,
+    pub key_stat: KeyStatus,
+    pub trajectory: Trajectory,
+    pub timer_event: at::AsyncTimerEvent<String>,
 }
 
 impl Model {
-    pub fn new(window_id:  WindowId, config: &map_io::Config, meshes: map_io::Meshes, lidar_param: cuda_helper::Vec3_cuda, ray_num: usize) -> Model {
+    pub fn new(app: &App, window_id:  WindowId, config: &map_io::Config, meshes: map_io::Meshes, lidar_param: cuda_helper::Vec3_cuda, ray_num: usize) -> Model {
         let grid_specs = grid::get_bounds(&meshes, config.grid_size);
         let mut occ_grid = Array2D::filled_with(-1, grid_specs.3 as usize, grid_specs.2 as usize);
         grid::line_drawing(&mut occ_grid, &meshes, grid_specs.0, grid_specs.1, config.grid_size);
@@ -52,7 +63,13 @@ impl Model {
             ray_num: ray_num,
             ranges: vec![0.; ray_num],
             initialized: false,
-            grid_size: config.grid_size
+            grid_size: config.grid_size,
+            color: EditorColor::new(),
+            egui: Egui::from_window(&app.window(window_id).unwrap()),
+            egui_rect: Rect::from_x_y_ranges(0.0..=1.0, 0.0..=1.0),
+            key_stat: KeyStatus{ctrl_pressed: false},
+            trajectory: Trajectory::new(),
+            timer_event: at::AsyncTimerEvent::new(3)
         }
     }
 }
