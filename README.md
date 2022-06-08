@@ -25,6 +25,7 @@
     - Easy to edit the previously drawn map. Trajectory display.
     - Screen shot API (also available in simulator)
 - Rust implementation: Safer, clearer and efficiency guaranteed! (Personally, I prefer Rust than C++)
+- Prettier front-end! **Night mode** supported!
 - configuration parser: modify the configurations of LiDAR, map, etc. in a `.json` file without compiling!
 
 ## TODO
@@ -45,8 +46,20 @@
   - [ ] Visualizer. Replacing RViz!
 
 ## Simple Demo
+The following video is a demo for simulator:
 
-https://user-images.githubusercontent.com/46109954/170672124-9a9eadaa-960b-4210-a8c2-ce416d11fc21.mp4
+https://user-images.githubusercontent.com/46109954/172607777-66209697-1d76-417a-a674-46d16c0bffc5.mp4
+
+The following video is a demo for the basic functionalities of LSMv2:
+
+https://user-images.githubusercontent.com/46109954/172607922-3f2d60a6-b3d0-42ab-a46c-8f96aa3f1f53.mp4
+
+The following video is a demo for the different plotting mode of LSMv2:
+
+https://user-images.githubusercontent.com/46109954/172608018-f1aee4f5-11fc-47ac-8321-97c3428693d0.mp4
+
+
+
 
 ## Compile & Run
 CUDA and `rustc` are of course, mandatory dependencies. `arch=compute_86` is recommended, since its usability is verified. For lower versions, please modify `lsm/build.rs`:
@@ -58,10 +71,16 @@ CUDA and `rustc` are of course, mandatory dependencies. `arch=compute_86` is rec
 
 Once you have the correct CUDA (and nvidia driver) and Rust Env, compilation should be smooth (if the source of Rust is correctly set). For (us) Chinese users, the source of rust libs should be changed to some faster domestic mirror sources, otherwise... wait for 10 years and the compilation might complete.
 
-Currently, there is only one usable executable file in this repo:
+To run the simulator:
 ```shell
 cd lsm
 cargo build --release
 cargo run --release --bin=sim
+```
+To run the editor:
+```shell
+cd lsm
+cargo build --release
+cargo run --release --bin=edit
 ```
 And there u go, a screen pops up and after setting the initial pose (left button, long press), you will see the simulated stuffs...
