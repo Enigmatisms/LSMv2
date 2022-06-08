@@ -3,7 +3,12 @@
         "amin": -90.0,
         "amax": 90.0,
         "ainc": 0.25,
-        "noise_k": 0.0
+        "noise_k": 0.0,
+
+        "lidar_r": 1.0,
+        "lidar_g": 0.0,
+        "lidar_b": 0.0,
+        "lidar_a": 1.0
     },
 
     "robot": {

@@ -1,5 +1,5 @@
 use std::fs;
-use serde::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use nannou::prelude::*;
 use std::io::Write;
 use std::io::{prelude::*, BufReader};
@@ -10,15 +10,19 @@ use crate::sim::cuda_helper::{Vec2_cuda, Vec3_cuda, self};
 pub type Mesh = Vec<Point2>;
 pub type Meshes = Vec<Mesh>;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct LidarConfig {
     pub amin: f32,
     pub amax: f32,
     pub ainc: f32,
-    pub noise_k: f32
+    pub noise_k: f32,
+    pub lidar_r: f32,
+    pub lidar_g: f32,
+    pub lidar_b: f32,
+    pub lidar_a: f32
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ScannerConfig {
     pub t_vel: f32,
     pub r_vel: f32,
@@ -27,19 +31,32 @@ pub struct ScannerConfig {
     pub pid_kd: f32,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ScreenConfig {
     pub width: u32,
     pub height: u32
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Config {
     pub lidar: LidarConfig,
     pub robot: ScannerConfig,
     pub screen: ScreenConfig,
     pub map_path: String,
     pub grid_size: f32
+}
+
+impl Config {
+    pub fn write_to_file(&self, path: &mut String) {
+        let mut output_file = path.clone();
+        if let Some(config_file) = get_file_to_save(&mut output_file, "../config/new_config.json") {
+            *path = output_file;
+            let mut saved_config = self.clone();
+            saved_config.lidar.amin -= saved_config.lidar.ainc / 2.0;
+            saved_config.lidar.amax += saved_config.lidar.ainc / 2.0;
+            let _ = serde_json::to_writer(config_file, &saved_config);
+        }
+    }
 }
 
 /// TODO: offset 600 and 450 needs to be removed
@@ -91,7 +108,18 @@ pub fn get_ray_num(lidar_param: &Vec3_cuda) -> usize {
     (((lidar_param.y - lidar_param.x) / lidar_param.z).round() as usize) + 1
 }
 
-pub fn read_config(file_path: &str) -> Config  {
+pub fn read_config_rdf() -> Option<Config> {
+    let path = rfd::FileDialog::new()
+        .set_file_name("../config/simulator_config.json")
+        .set_directory(".")
+        .pick_file();
+    if let Some(path_res) = path {
+        return Some(read_config(path_res));
+    }
+    None
+}
+
+pub fn read_config<T>(file_path: T) -> Config where T: AsRef<std::path::Path> {
     let file: fs::File = fs::File::open(file_path).ok().unwrap();
     let reader = BufReader::new(file);
     let mut config: Config = serde_json::from_reader(reader).ok().unwrap();
@@ -104,41 +132,28 @@ pub fn read_config(file_path: &str) -> Config  {
 }
 
 pub fn save_to_file(map_points: &Vec<Chain>, file_name: &String) -> String {
-    let mut _path_res= String::new();
-    if file_name.len() == 0 {
-        let path = rfd::FileDialog::new()
-            .set_file_name("../maps/new_map.txt")
-            .set_directory(".")
-            .save_file();
-        if let Some(file) = path {
-            _path_res = String::from(file.as_os_str().to_str().unwrap());
-        } else {
-            println!("Failed to open file.");
-            return String::new();
+    let mut path_res = file_name.clone();
+    if let Some(mut file) = get_file_to_save(&mut path_res, "../maps/new_map.txt") {
+        if map_points.len() <= 1 {
+            return path_res;
         }
-    } else {
-        _path_res = file_name.clone();
-    }
-    let mut file = std::fs::File::create(_path_res.as_str()).expect("Failed to create file.");
-    if map_points.len() <= 1 {
-        return _path_res;
-    }
-    let map_size = map_points.len() - 1;
-    for i in 0..map_size {          // the last one (not completed) will not be stored
-        let chain = &map_points[i];
-        if chain.len() <= 2 {
-            continue;
+        let map_size = map_points.len() - 1;
+        for i in 0..map_size {          // the last one (not completed) will not be stored
+            let chain = &map_points[i];
+            if chain.len() <= 2 {
+                continue;
+            }
+            write!(file, "{} ", chain.len()).expect("Failed to write to file.");
+            for pt in chain.points.iter() {
+                write!(file, "{} {} ", pt.x, pt.y).expect("Failed to write to file.");
+            }
+            write!(file, "\n").expect("Failed to write to file.");
         }
-        write!(file, "{} ", chain.len()).expect("Failed to write to file.");
-        for pt in chain.points.iter() {
-            write!(file, "{} {} ", pt.x, pt.y).expect("Failed to write to file.");
-        }
-        write!(file, "\n").expect("Failed to write to file.");
     }
-    return _path_res;
+    return path_res;
 }
 
-pub fn load_traj_file(tral_points: &mut Vec<Point2>) {
+pub fn load_traj_file(tral_points: &mut Vec<Point2>){
     let path = rfd::FileDialog::new()
         .set_file_name("../maps/hfps0.lgp")
         .set_directory(".")
@@ -150,16 +165,19 @@ pub fn load_traj_file(tral_points: &mut Vec<Point2>) {
     }
 }
 
-pub fn load_map_file(map_points: &mut Meshes) {
+pub fn load_map_file(map_points: &mut Meshes) -> String {
     let path = rfd::FileDialog::new()
         .set_file_name("../maps/standard0.lgp")
         .set_directory(".")
         .pick_file();
+    let mut result = String::new();
     if let Some(path_res) = path {
+        result = String::from(path_res.as_os_str().to_str().unwrap());
         *map_points = parse_map_file(path_res).unwrap();
     } else {
         map_points.clear();
     }
+    result
 }
 
 // ========== privates ==========
@@ -195,5 +213,26 @@ fn parse_traj_file<T>(filepath: T) -> Option<Mesh> where T: AsRef<std::path::Pat
         return Some(result);
     } else {
         return None;
+    }
+}
+
+fn get_file_to_save(file_name: &mut String, default: &str) -> Option<std::fs::File> {
+    if file_name.len() == 0 {
+        let path = rfd::FileDialog::new()
+            .set_file_name(default)
+            .set_directory(".")
+            .save_file();
+        if let Some(file) = path {
+            *file_name = String::from(file.as_os_str().to_str().unwrap());
+        } else {
+            *file_name = String::from("");
+            return None;
+        }
+    }
+    if let Ok(result) = std::fs::File::create(file_name.as_str()) {
+        Some(result)
+    } else {
+        println!("Unable to open file.");
+        None
     }
 }

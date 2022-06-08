@@ -124,7 +124,7 @@ __global__ void sparsifyScan(const float* const denser, float* const sparser, fl
     }
     if (avg_cnt > 0) {
         const float range = r_sum / float(avg_cnt);
-        const float noise = max(-3.5f, min(3.5f, range * curand_normal(&rand_state) * 0.005));
+        const float noise = max(-3.5f, min(3.5f, range * curand_normal(&rand_state) * noise_level));
         sparser[output_base] = range + noise;
     } else {
         sparser[output_base] = 1e6;

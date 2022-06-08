@@ -1,5 +1,5 @@
 use nannou::prelude::*;
-use nannou_egui::{Egui, egui::Rect};
+use nannou_egui::Egui;
 
 use super::mesh::Chain;
 use super::addm::AdditionalMode;
@@ -32,7 +32,6 @@ pub enum DrawState {
     Rect,
 }
 
-// TODO: 个人希望，此处存储点使用链表，则结果的存储使用链表的链表
 pub struct Model {
     pub map_points: Vec<Chain>,
     pub select: Selection,
@@ -43,7 +42,7 @@ pub struct Model {
     pub trajectory: Trajectory,
     pub color: EditorColor,
     pub egui: Egui,
-    pub egui_rect: Rect,
+    pub inside_gui: bool,
     pub saved_file_name: String,
     pub scrn_mov: bool,
     pub obj_mov: bool,
@@ -67,7 +66,7 @@ impl Model {
             trajectory: Trajectory::new(),
             color: EditorColor::new(),
             egui: egui,
-            egui_rect: Rect::from_x_y_ranges(0.0..=1.0, 0.0..=1.0),
+            inside_gui: false,
             saved_file_name: String::from(""),
             scrn_mov: false,
             obj_mov: false,
@@ -76,12 +75,6 @@ impl Model {
             timer_event: at::AsyncTimerEvent::new(3),
             add_drawer: AdditionalMode::new()
         }
-    }
-
-    #[inline(always)]
-    pub fn cursor_in_gui(&self, w_h: &(f32, f32), pt: &Point2) -> bool {
-        let local_pt = pt2(pt.x + 0.5 * w_h.0, 0.5 * w_h.1 - pt.y);
-        (local_pt.x > self.egui_rect.left()) && (local_pt.y + 30. > self.egui_rect.top()) && (local_pt.x < self.egui_rect.right()) && (local_pt.y - 256. < self.egui_rect.top())
     }
 }
 

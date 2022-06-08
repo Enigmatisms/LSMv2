@@ -27,7 +27,8 @@ impl<T> AsyncTimerEvent<T> where T: Send + Default + 'static {
         None
     } 
 
-    pub fn activate(&mut self, elem: T) {
+    pub fn activate(&mut self, reset_item: T, now_item: T) {
+        self.item = now_item;
         if let Some(recv) = self.receiver.take() {
             drop(recv);             // if receiver exists, drop it
         }
@@ -36,7 +37,7 @@ impl<T> AsyncTimerEvent<T> where T: Send + Default + 'static {
         let sleep_sec = self.sleep_time;
         std::thread::spawn(move || {
             std::thread::sleep(Duration::from_secs(sleep_sec));
-            let _ = tx.send(elem);          // whether successful or not, dropping tx (multiple calls to activate might incur problem (todo))
+            let _ = tx.send(reset_item);          // whether successful or not, dropping tx (multiple calls to activate might incur problem (todo))
             drop(tx);
         });
     }

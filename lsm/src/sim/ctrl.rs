@@ -8,7 +8,18 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     match _key {
         Key::W => {_model.velo.x = _model.velo_max.x;},
         Key::A => {_model.velo.y = _model.velo_max.x;},
-        Key::S => {_model.velo.x = -_model.velo_max.x;},
+        Key::S => {
+            if _model.key_stat.ctrl_pressed == false {
+                _model.velo.x = -_model.velo_max.x;
+            } else {
+                let config_to_save = Model::output_config(
+                    &_model.lidar_param, &_model.velo_max, &_model.pid, &_model.str_config.map_name, &_model.color.lidar_color, 
+                    &_model.lidar_noise, &_model.wctrl.win_w, &_model.wctrl.win_h, &_model.grid_size
+                );
+                config_to_save.write_to_file(&mut _model.str_config.config_output);
+                _model.timer_event.activate(String::from(NULL_STR), String::from(CONFIG_SAVE_STRING));
+            }
+        },
         Key::D => {_model.velo.y = -_model.velo_max.x;},
         Key::Escape => {
             (_model.wctrl.exit_func)(_app);
@@ -17,8 +28,7 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
         Key::P => {
             if _model.key_stat.ctrl_pressed == true {
                 plot::take_snapshot(&_app.main_window());
-                _model.timer_event.activate(String::from(NULL_STR));
-                _model.timer_event.item = String::from(SNAPSHOT_STRING);
+                _model.timer_event.activate(String::from(NULL_STR), String::from(SNAPSHOT_STRING));
             }
         },
         _ => {},
@@ -44,7 +54,7 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
 // initial position selection
 pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
     let point = _app.mouse.position();
-    if _model.cursor_in_gui(&_app.main_window().rect().w_h(), &point) {
+    if _model.inside_gui == true {
         return;
     }
     if _model.initialized == false {
@@ -73,7 +83,7 @@ pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
 // mouse release will determine the initial angle
 pub fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
     let now_pos = _app.mouse.position();
-    if _model.cursor_in_gui(&_app.main_window().rect().w_h(), &now_pos) {
+    if _model.inside_gui == true {
         return;
     }
     if _model.initialized == false {

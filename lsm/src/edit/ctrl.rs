@@ -24,15 +24,13 @@ pub fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
         Key::S => {
             if _model.key_stat.ctrl_pressed == true {
                 _model.saved_file_name = save_to_file(&_model.map_points, &_model.saved_file_name);
-                _model.timer_event.activate(String::from(NULL_STR));
-                _model.timer_event.item = String::from(SAVED_STRING);
+                _model.timer_event.activate(String::from(NULL_STR), String::from(SAVED_STRING));
             }
         }
         Key::P => {
             if _model.key_stat.ctrl_pressed == true {
                 plot::take_snapshot(&_app.main_window());
-                _model.timer_event.activate(String::from(NULL_STR));
-                _model.timer_event.item = String::from(SNAPSHOT_STRING);
+                _model.timer_event.activate(String::from(NULL_STR), String::from(SNAPSHOT_STRING));
             }
         },
         _ => {},
@@ -98,7 +96,7 @@ pub fn key_released(_app: &App, _model: &mut Model, _key: Key) {
 // initial position selection
 pub fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
     let point = _app.mouse.position();
-    if _model.cursor_in_gui(&_app.main_window().rect().w_h(), &point) {
+    if _model.inside_gui == true {
         return;
     }
     if _model.scrn_mov == true {

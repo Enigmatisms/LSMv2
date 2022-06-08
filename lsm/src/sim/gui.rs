@@ -3,10 +3,9 @@ use nannou_egui::{self, egui};
 
 use super::model::Model;
 use super::viz::initialize_cuda_end;
-// use ceat::mesh::from_raw_points;
 use crate::utils::toggle::toggle;
 use crate::utils::plot::take_snapshot;
-use crate::utils::map_io::{load_traj_file, load_map_file};
+use crate::utils::map_io::{load_traj_file, load_map_file, read_config_rdf};
 use crate::utils::consts::*;
 
 pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
@@ -16,7 +15,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
         ref mut plot_config,
         ref mut wtrans,
         ref mut egui,
-        ref mut egui_rect,
+        ref mut inside_gui,
         ref mut key_stat,
         ref mut color,
         ref mut trajectory,
@@ -27,18 +26,19 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
         ref mut grid_specs,
         ref mut occ_grid,
         ref mut initialized,
+        ref mut lidar_noise,
+        ref mut str_config,
 
+        ref lidar_param,
         ref ray_num,
         ref grid_size,
         ..
-    } = *model;
+    } = model;
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
     let window = egui::Window::new("Editor configuration").default_width(270.);
     let window = window.open(&mut wctrl.gui_visible);
     window.show(&ctx, |ui| {
-        *egui_rect = ui.clip_rect();
-        
         egui::Grid::new("switch_grid")
             .striped(true)
         .show(ui, |ui| {
@@ -93,10 +93,13 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.add(egui::Slider::new(&mut pid.z, 0.00..=0.1));
             ui.end_row();
 
+            ui.label("LiDAR noise");
+            ui.add(egui::Slider::new(lidar_noise, 0.00..=0.08));
+            ui.end_row();
+
             ui.label("LiDAR color picker:");
             ui.color_edit_button_rgba_unmultiplied(&mut color.lidar_color);
             ui.end_row();
-
 
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Centering view").clicked() {
@@ -106,8 +109,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Take screenshot").clicked() {
                     take_snapshot(&app.main_window());
-                    timer_event.activate(String::from(NULL_STR));
-                    timer_event.item = String::from(SNAPSHOT_STRING);
+                    timer_event.activate(String::from(NULL_STR), String::from(SNAPSHOT_STRING));
                 }
             });
             ui.end_row();
@@ -116,7 +118,8 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Load map file").clicked() {
                     let mut raw_points: Vec<Vec<Point2>> = Vec::new();
-                    load_map_file(&mut raw_points);
+                    str_config.map_name = load_map_file(&mut raw_points);
+
                     initialize_cuda_end(&raw_points, *ray_num, true);      // re-intialize CUDA (ray tracer)
                     Model::recompute_grid(grid_specs, occ_grid, &raw_points, *grid_size);           // re-compute occpuancy grid
                     *map_points = raw_points;           // replacing map points
@@ -129,6 +132,45 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
                 }
             });
             ui.end_row();
+
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Load config").clicked() {
+                    if let Some(new_config) = read_config_rdf() {
+                        Model::reload_config(&new_config, &mut wctrl.win_w, &mut wctrl.win_h,
+                            pid, &mut color.lidar_color, velo_max, lidar_noise
+                        );
+                        timer_event.activate(String::from(NULL_STR), String::from(CONFIG_LOAD_STRING));
+                    }
+                }
+            });
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Reserved").clicked() {}
+            });
+            ui.end_row();
+
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Save config").clicked() {
+                    let config_to_save = Model::output_config(
+                        lidar_param, velo_max, pid, &str_config.map_name, &color.lidar_color, lidar_noise, 
+                        &wctrl.win_w, &wctrl.win_h, grid_size
+                    );
+                    config_to_save.write_to_file(&mut str_config.config_output);
+                    timer_event.activate(String::from(NULL_STR), String::from(CONFIG_SAVE_STRING));
+                }
+            });
+            ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
+                if ui.button("Save config as").clicked() {
+                    let config_to_save = Model::output_config(
+                        lidar_param, velo_max, pid, &str_config.map_name, &color.lidar_color, lidar_noise,
+                        &wctrl.win_w, &wctrl.win_h, grid_size
+                    );
+                    let mut empty_string = String::from("");
+                    config_to_save.write_to_file(&mut empty_string);
+                    timer_event.activate(String::from(NULL_STR), String::from(CONFIG_SAVE_STRING));
+                    str_config.config_output = empty_string;
+                }
+            });
+            ui.end_row();
         });
 
         ui.horizontal(|ui| {
@@ -136,5 +178,6 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
                 ui.label(timer_event.item.as_str());
             });
         });
+        *inside_gui = ui.ctx().is_pointer_over_area();
     });
 }

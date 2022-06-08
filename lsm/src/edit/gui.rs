@@ -19,7 +19,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
         ref mut trajectory,
         ref mut scrn_mov,
         ref mut obj_mov,
-        ref mut egui_rect,
+        ref mut inside_gui,
         ref mut draw_state,
         ref mut timer_event,
         ref mut color,
@@ -32,7 +32,6 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
     let window = egui::Window::new("Editor configuration").default_width(270.);
     let window = window.open(&mut wctrl.gui_visible);
     window.show(&ctx, |ui| {
-        *egui_rect = ui.clip_rect();
         
         egui::Grid::new("switch_grid")
             .striped(true)
@@ -109,8 +108,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Take screenshot").clicked() {
                     take_snapshot(&app.main_window());
-                    timer_event.activate(String::from(NULL_STR));
-                    timer_event.item = String::from(SNAPSHOT_STRING);
+                    timer_event.activate(String::from(NULL_STR), String::from(SNAPSHOT_STRING));
                 }
             });
 
@@ -118,15 +116,13 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Save map file").clicked() {
                     *saved_file_name = save_to_file(map_points, saved_file_name);
-                    timer_event.activate(String::from(NULL_STR));
-                    timer_event.item = String::from(SAVED_STRING);
+                    timer_event.activate(String::from(NULL_STR), String::from(SAVED_STRING));
                 }
             });
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Save as file ...").clicked() {
                     *saved_file_name = save_to_file(map_points, &String::from(""));
-                    timer_event.activate(String::from(NULL_STR));
-                    timer_event.item = String::from(SAVED_STRING);
+                    timer_event.activate(String::from(NULL_STR), String::from(SAVED_STRING));
                 }
             });
             ui.end_row();
@@ -151,6 +147,8 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
                 ui.label(timer_event.item.as_str());
             });
         });
+
+        *inside_gui = ui.ctx().is_pointer_over_area();
     });
 }
 
