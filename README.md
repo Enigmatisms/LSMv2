@@ -1,4 +1,4 @@
-# LSMv2 (WIP)
+# LSMv2
 **L**iDAR **S**i**M**ulator v2: Interactive 2D LiDAR scanner simulator version II. Implemented via Rust and CUDA.
 ## Functionalities & Features
 
@@ -6,14 +6,26 @@
 - Visualization via Rust [nannou](https://github.com/nannou-org/nannou) (implemented in OpenGL), enabling smooth and limitless visualization.
   - For example, the older simulation visualization implemented in OpenCV is restricted to pixel plotting: unable (or very tricky) to zoom in\out, rotate and translate the canvas.
   - Nannou has no limits w.r.t canvas operations and it is extremely efficient due to the bottom layer implementation of OpenGL.
+  - `nannou_egui` crate used. Intergrated Rust EGUI GUI implementation, easy to use & good looking.
+
+|     GUI for editor     |                  GUI for simulator                   |
+| :--------------------: | :--------------------------------------------------: |
+| ![](assets/editor.png) | <img src="assets/simulator.png" style="zoom:80%;" /> |
+
 - Smooth mouse & keyboard control of the simulated scanner (via nannou API).
 - Mixed programing: Rust & CUDA C++: Enabling accelerated 2d LiDAR ray trace.
 - Fast collision detection: scanner will not be allowed to drive into the obstacles
   - Coarse occupancy grid (indicates the obstacle id of the grid if the grid is occupied)
   - Use the id to access the contour of the obstacle and check whether the scanner is going to move inside the obstacle (point in polygon test)
-  - An efficient algorithm inplemented via Rust
+  - An efficient algorithm implemented via Rust
+- Better map editor (than version I, the old LiDARSim2D)
+    - Canvas translation, rotation and scaling are supported.
+    - Three modes: polygon, straight line (axis-aligned), rectangle (axis-aligned)
+    - Drawn point selection, movement, deletion.
+    - Easy to edit the previously drawn map. Trajectory display.
+    - Screen shot API (also available in simulator)
 - Rust implementation: Safer, clearer and efficiency guaranteed! (Personally, I prefer Rust than C++)
-- configuration parser: modify the configurations of LiDAR, map, etc in a `.json` file without compiling!
+- configuration parser: modify the configurations of LiDAR, map, etc. in a `.json` file without compiling!
 
 ## TODO
 
@@ -30,7 +42,6 @@
   - [ ] More available sensors like Odometry and IMU
 - [ ] Fancier Future
   - [ ] Network API: multiple scanners.
-  - [ ] Unified GUI: softwarization!
   - [ ] Visualizer. Replacing RViz!
 
 ## Simple Demo
