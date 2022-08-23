@@ -10,6 +10,7 @@ use crate::utils::structs::*;
 use crate::utils::async_timer as at;
 use crate::utils::color::EditorColor;
 use std::f32::consts::PI;
+use std::path::PathBuf;
 
 #[derive(Default)]
 pub struct StringConfig {
@@ -51,13 +52,18 @@ pub struct Model {
     pub key_stat: KeyStatus,
     pub trajectory: Trajectory,
     pub timer_event: at::AsyncTimerEvent<String>,
-    pub str_config: StringConfig
+    pub str_config: StringConfig,
+    pub caster: CastCtrl
 }
 
 impl Model {
-    pub fn new(app: &App, window_id:  WindowId, config: &map_io::Config, meshes: map_io::Meshes, lidar_param: cuda_helper::Vec3_cuda, ray_num: usize) -> Model {
+    pub fn new(
+        app: &App, window_id:  WindowId, config: &map_io::Config, meshes: map_io::Meshes,
+        lidar_param: cuda_helper::Vec3_cuda, ray_num: usize, catser_pnum: usize) -> Model {
         let grid_specs = grid::get_bounds(&meshes, config.grid_size);
         let mut occ_grid = Array2D::filled_with(-1, grid_specs.3 as usize, grid_specs.2 as usize);
+        let img_path = PathBuf::from("../config/texture-1.png");
+        let texture = wgpu::Texture::from_path(app, img_path).unwrap();
         grid::line_drawing(&mut occ_grid, &meshes, grid_specs.0, grid_specs.1, config.grid_size);
         Model {
             map_points: meshes, 
@@ -83,6 +89,7 @@ impl Model {
             timer_event: at::AsyncTimerEvent::new(3),
             inside_gui: false,
             str_config: StringConfig::new(&config.map_path),
+            caster: CastCtrl::new(catser_pnum, texture)
         }
     }
 
@@ -142,6 +149,7 @@ fn exit(app: &App) {
     unsafe {
         cuda_helper::deallocateFixed();
         cuda_helper::deallocateDevice();
+        cuda_helper::deallocatePoints();
     }
     app.quit();
 }

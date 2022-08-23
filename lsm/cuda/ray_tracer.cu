@@ -1,5 +1,9 @@
 #include <curand.h>
 #include <curand_kernel.h>
+#include <thrust/sort.h>
+#include <thrust/binary_search.h>
+#include <thrust/functional.h>
+#include <thrust/execution_policy.h>
 #include "cuda_err_check.hpp"
 #include "ray_tracer.hpp"
 

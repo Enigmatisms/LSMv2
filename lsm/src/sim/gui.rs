@@ -28,6 +28,7 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
         ref mut initialized,
         ref mut lidar_noise,
         ref mut str_config,
+        ref mut caster,
 
         ref lidar_param,
         ref ray_num,
@@ -97,6 +98,10 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.add(egui::Slider::new(lidar_noise, 0.00..=0.08));
             ui.end_row();
 
+            ui.label("Shadow Radius");
+            ui.add(egui::Slider::new(&mut caster.radius, (99.9)..=10000.));
+            ui.end_row();
+
             ui.label("LiDAR color picker:");
             ui.color_edit_button_rgba_unmultiplied(&mut color.lidar_color);
             ui.end_row();
@@ -118,9 +123,10 @@ pub fn update_gui(app: &App, model: &mut Model, update: &Update) {
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Center), |ui| {
                 if ui.button("Load map file").clicked() {
                     let mut raw_points: Vec<Vec<Point2>> = Vec::new();
+                    let mut total_pt_num = 0;
                     str_config.map_name = load_map_file(&mut raw_points);
-
-                    initialize_cuda_end(&raw_points, *ray_num, true);      // re-intialize CUDA (ray tracer)
+                    initialize_cuda_end(&raw_points, *ray_num, &mut total_pt_num, true);      // re-intialize CUDA (ray tracer)
+                    caster.total_pt_num = total_pt_num;
                     Model::recompute_grid(grid_specs, occ_grid, &raw_points, *grid_size);           // re-compute occpuancy grid
                     *map_points = raw_points;           // replacing map points
                     *initialized = false;               // should reset starting point

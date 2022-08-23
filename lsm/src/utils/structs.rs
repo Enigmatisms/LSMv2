@@ -41,6 +41,19 @@ pub struct TimerEvent {
     recent_saved: bool,
 }
 
+pub struct CastCtrl {
+    pub viz_pts: Vec<Point2>,
+    pub total_pt_num: usize, 
+    pub radius: f32,
+    pub texture: wgpu::Texture
+}
+
+impl CastCtrl {
+    pub fn new(_total_pt_num: usize, texture: wgpu::Texture) -> Self {
+        CastCtrl {viz_pts: Vec::new(), total_pt_num: _total_pt_num, radius: 1000., texture: texture}
+    }
+}
+
 impl TimerEvent {
     pub fn new() -> TimerEvent {
         TimerEvent {saved_time: Instant::now(), recent_saved: false, to_display: String::from("...")}

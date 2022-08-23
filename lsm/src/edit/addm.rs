@@ -6,8 +6,13 @@ use crate::utils::plot::{to_screen, localized_position};
 const PI_4: f32 = std::f32::consts::PI / 4.;
 const PI_34: f32 = PI_4 * 3.;
 
-const MOVEMENT: [(f32, f32); 4] = [(1., 0.), (0., 1.0), (-1.0, 0.), (0., -1.)];
+const MOVEMENT: [(f32, f32); 4] = [(0., 1.), (1., 0.), (0., -1.), (-1., 0.)];
+// const MOVEMENT: [(f32, f32); 4] = [(1., 0.), (0., 1.0), (-1.0, 0.), (0., -1.)];
 
+/**
+ * Additional drawing mode: rectangle and straight line (both axis-aligned)
+ * Depends on the last point(s) to define a line or rect
+ */
 pub struct AdditionalMode {
     last_p: Point2,
     last_set: bool,

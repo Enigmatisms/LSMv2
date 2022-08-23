@@ -118,13 +118,12 @@ pub fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
 
 // pid angle control
 pub fn mouse_moved(_app: &App, _model: &mut Model, _pos: Point2) {
-    let point = _app.mouse.position();
     if _model.wtrans.t_set == false {
-        _model.wtrans.t += point - _model.wtrans.t_start;
-        _model.wtrans.t_start = point;
+        _model.wtrans.t += _pos - _model.wtrans.t_start;
+        _model.wtrans.t_start = _pos;
     }
     if _model.wtrans.r_set == false {
-        let current_angle = point.y.atan2(point.x);
+        let current_angle = _pos.y.atan2(_pos.x);
         let delta_angle = utils::good_angle(current_angle - _model.wtrans.rot_start);
         _model.wtrans.rot_start = current_angle;
         _model.wtrans.rot = utils::good_angle(delta_angle + _model.wtrans.rot);
